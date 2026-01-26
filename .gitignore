@@ -4,7 +4,14 @@ __pycache__/
 build/
 dist/
 wheels/
+logs/
+*.jsonl
 *.egg-info
+*.log
 
 # Virtual environments
 .venv
+*.sqlite3
+*.parquet
+*.bin
+*.env

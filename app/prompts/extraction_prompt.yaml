@@ -1,0 +1,16 @@
+name: extraction_prompt
+version: 1.0
+description: Extract key information from colonoscopy transcriptions according to pydantic schema.
+prompt:
+    role: system
+    content: |
+      Extract all polyp related information from the colonoscopy transcription provided by the user.
+    rules:
+      - Only extract information that is explicitly stated in the transcription.
+      - If information is not provided in the transcription, fill the corresponding field with "null"
+      - Each polyp should be represented as a separate entity or dictionary
+      - Do not infer attributes that are not explicitly stated in the schema
+      - Do not merge multiple polyps into one entry.
+      - The output must adhere strictly to the provided pydantic schema
+      - Extract all polyps to the end of the transcription.
+      
