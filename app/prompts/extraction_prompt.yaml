@@ -13,4 +13,4 @@ prompt:
       - Do not merge multiple polyps into one entry.
       - The output must adhere strictly to the provided pydantic schema
       - Extract all polyps to the end of the transcription.
-      
+      - For the resection method, if no mention of cautery or heat is made, assume cold snare or cold biopsy.
