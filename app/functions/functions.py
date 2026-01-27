@@ -17,12 +17,12 @@ PROMPT_PATH = BASE_PATH / 'prompts'
 DATA_PATH = BASE_PATH / 'data'
 
 
-def load_prompt() -> str:
-    PROMPT_FILE = PROMPT_PATH / 'extraction_prompt.yaml'
-    if not PROMPT_FILE.exists():
-        raise FileNotFoundError(f"Prompt file not found: {PROMPT_FILE}")
+def load_prompt(prompt_file:str) -> str:
+    prompt_path = PROMPT_PATH / prompt_file
+    if not prompt_path.exists():
+        raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
     
-    with open(PROMPT_FILE, 'r') as f:
+    with open(prompt_path, 'r') as f:
         try:
             config = yaml.safe_load(f)
         except yaml.YAMLError as e:
@@ -37,7 +37,7 @@ def load_prompt() -> str:
 
 
 async def extract_json(user_input: str) -> dict:
-    prompt = load_prompt()
+    prompt = load_prompt('extraction_prompt.yaml')
     
 
     response = await chat_client.responses.parse(
@@ -54,11 +54,13 @@ async def extract_json(user_input: str) -> dict:
 
 
 async def transcribe_audio(file_path: str) -> str:
+    prompt = load_prompt('transcription_prompt.yaml')
     with open(file_path, 'rb') as audio_file:
         transcription = await transcribe_client.audio.transcriptions.create(
             model = 'gpt-4o-transcribe',
             file = audio_file,
-            response_format = 'text'
+            response_format = 'text',
+            prompt = prompt
         )
     return transcription
 
@@ -72,5 +74,5 @@ test_audio_path = DATA_PATH / 'test_audio_1.m4a'
 
 if __name__ == "__main__":
 
-    result = asyncio.run(transcribe_audio(test_audio_path))
+    result = asyncio.run(extract_json(test_input))
     print(result)
