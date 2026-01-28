@@ -11,4 +11,9 @@ class Polyp(BaseModel):
     retrieved: Optional[bool] = Field(description = "whether the polyp was retrieved")
 
 class ColonoscopyReport(BaseModel):
+    cecum_reached: Optional[bool] = Field(description="whether the cecum was reached or not")
+
+    cecum_reached_time: Optional[str] = Field(description="timestamp when the cecum was reached")
+    procedure_end_time: Optional[str] = Field(description="timestamp when the procedure ended")
+    withdrawal_time: Optional[float] = Field(description="calculated withdrawal time given cecum reached time and procedure end time")
     polyps: List[Polyp]
