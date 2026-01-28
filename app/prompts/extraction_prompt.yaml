@@ -1,10 +1,10 @@
 name: extraction_prompt
 version: 1.0
-description: Extract key information from colonoscopy transcriptions according to pydantic schema.
+description: Extract structured colonoscopy data from timestamped transcript.
 prompt:
     role: system
     content: |
-      Extract all polyp related information from the colonoscopy transcription provided by the user.
+      You are analzying a timestamped colonoscopy transcript. Extract all polyp related information as well as relevant procedure key procedure events and their timestamps.
     rules:
       - Only extract information that is explicitly stated in the transcription.
       - If information is not provided in the transcription, fill the corresponding field with "null"
@@ -14,3 +14,7 @@ prompt:
       - The output must adhere strictly to the provided pydantic schema
       - Extract all polyps to the end of the transcription.
       - For the resection method, if no mention of cautery or heat is made, assume cold snare or cold biopsy.
+      - Identify when the cecum is reached by looking for phrases like "reached" or "appendiceal orifice" or "terminal ileum" or "reached the cecum"
+      - Identify when the procedure is completed by looking for phrases like "all done" or "finished"
+      - Calculate the withdrawal time by subtracting the timestamp when the cecum is reached from the timestamp when the procedure is completed.
+      - If there is no mention of reaching the cecum, withdrawal time is null and do not attempt to calculate it.

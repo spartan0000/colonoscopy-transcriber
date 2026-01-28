@@ -9,7 +9,7 @@ import yaml
 
 load_dotenv()
 
-from app.functions.clients import chat_client, hnz_client, transcribe_client
+from app.functions.clients import chat_client, hnz_client, transcribe_client, whisper_client
 from app.models.colonoscopy import ColonoscopyReport
 
 BASE_PATH = Path(__file__).parent.parent
@@ -33,9 +33,48 @@ def load_prompt(prompt_file:str) -> str:
             rules_text = "\n Rules: \n" + "\n".join(f'- {rule}' for rule in rules)
             system_prompt = f'{system_prompt}\n{rules_text}'
         return system_prompt
+
+
+
+#this function likely obsolete given the one below using whisper which will get both the transcription in segments as well as timestamps
+#was used for development and testing the extraction of text from audio
+async def transcribe_audio(file_path: str) -> str:
+    prompt = load_prompt('transcription_prompt.yaml')
+    with open(file_path, 'rb') as audio_file:
+        transcription = await transcribe_client.audio.transcriptions.create(
+            model = 'gpt-4o-transcribe',
+            file = audio_file,
+            response_format = 'text',
+            prompt = prompt
+        )
+    return transcription
+
+async def get_timestamps(file_path: str) -> dict:
     
+    with open(file_path, 'rb') as audio_file:
+        timestamps = await whisper_client.audio.transcriptions.create(
+            model = 'whisper',
+            file = audio_file,
+            response_format = 'verbose_json',
+            timestamp_granularities = ['segment'],
 
+        )
 
+        #get rid of unnecessary data like tokens and logprobs
+        clean_data = {
+            'entire_text':timestamps.text,
+            'segments': [
+        {
+            'start': seg.start,
+            'end':seg.end,
+            'text': seg.text
+        }
+            for seg in timestamps.segments
+            ]
+        }
+        return clean_data
+
+#cleaned data then goes into this function to extract polyp data and other endoscopy data in structured format
 async def extract_json(user_input: str) -> dict:
     prompt = load_prompt('extraction_prompt.yaml')
     
@@ -52,17 +91,10 @@ async def extract_json(user_input: str) -> dict:
     output = response.output_parsed.model_dump()
     return output
 
+#then into this function to generate a final report in PDF
+def convert_to_report(data: dict) -> str:
+    pass
 
-async def transcribe_audio(file_path: str) -> str:
-    prompt = load_prompt('transcription_prompt.yaml')
-    with open(file_path, 'rb') as audio_file:
-        transcription = await transcribe_client.audio.transcriptions.create(
-            model = 'gpt-4o-transcribe',
-            file = audio_file,
-            response_format = 'text',
-            prompt = prompt
-        )
-    return transcription
 
 
 test_input = """
@@ -74,5 +106,5 @@ test_audio_path = DATA_PATH / 'test_audio_1.m4a'
 
 if __name__ == "__main__":
 
-    result = asyncio.run(extract_json(test_input))
+    result = asyncio.run(get_timestamps(test_audio_path))
     print(result)
