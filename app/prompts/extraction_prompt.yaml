@@ -18,3 +18,4 @@ prompt:
       - Identify when the procedure is completed by looking for phrases like "all done" or "finished"
       - Calculate the withdrawal time by subtracting the timestamp when the cecum is reached from the timestamp when the procedure is completed.
       - If there is no mention of reaching the cecum, withdrawal time is null and do not attempt to calculate it.
+      - Pay particular attention to the sign out at the end of the procedure which contains a summary of polyps removed and any other findings.
