@@ -6,6 +6,7 @@ import asyncio
 
 from pathlib import Path
 import yaml
+import json
 
 load_dotenv()
 
@@ -74,16 +75,20 @@ async def get_timestamps(file_path: str) -> dict:
         }
         return clean_data
 
-#cleaned data then goes into this function to extract polyp data and other endoscopy data in structured format
-async def extract_json(user_input: str) -> dict:
+#cleaned data (dictionary) then goes into this function to extract polyp data and other endoscopy data in structured format
+async def extract_json(user_input: dict) -> dict:
     prompt = load_prompt('extraction_prompt.yaml')
     
+    transcript_text = f"""
+    full text: {user_input['entire_text']}
+    segments: {json.dumps(user_input['segments'], indent = 2)}
+    """
 
     response = await chat_client.responses.parse(
         model = "gpt-5-mini",
         input = [
             {'role': 'system', 'content': prompt},
-            {'role': 'user', 'content': user_input}
+            {'role': 'user', 'content': transcript_text}
         ],
         text_format = ColonoscopyReport,
     )
@@ -97,14 +102,15 @@ def convert_to_report(data: dict) -> str:
 
 
 
-test_input = """
-there's a polyp.  looks like transverse colon.  probably 2mm sessile.  I'll take a snare.  No cautery needed.  Ok, did you get it?  Yes we got it.  Ok great
-ok, i'll take the snare again.  this one is also transverse, probably 3mm.  man, this one's tricky.  ok, got it.  did you get it?  Yes we have it.
-ok, this one is sigmoid, 3mm.  i'll take the snare again.  ok, did you get it?  Yes we got it.
-""" 
+#testing and development purposes only
 test_audio_path = DATA_PATH / 'test_audio_1.m4a'
+test_audio_path_2 = DATA_PATH/ 'speech_sample.mp3'
 
 if __name__ == "__main__":
 
-    result = asyncio.run(get_timestamps(test_audio_path))
-    print(result)
+    transcript_with_timestamps = asyncio.run(get_timestamps(test_audio_path_2))
+    json_output = asyncio.run(extract_json(transcript_with_timestamps))
+
+    print(transcript_with_timestamps)
+    print(json_output)
+
