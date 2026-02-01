@@ -1,3 +1,8 @@
+from app.database.connection import SessionLocal
+
+
+
+
 def main():
     print("Hello from colonoscopy-transcription!")
 

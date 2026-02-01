@@ -45,7 +45,7 @@ class Procedure(Base):
     __tablename__ = "procedures"
     __table_args__ = (
         UniqueConstraint("patient_id", "procedure_date", name="uq_patient_procedure_date"),
-        Index("idx_patient_id", "patient_id", "procedure_date")
+        Index("idx_proc_patient_date", "patient_id", "procedure_date")
         )
     
 
@@ -95,5 +95,9 @@ class Histology(Base):
     histology = Column(Enum(PathologyType))
     dysplasia = Column(Enum(DysplasiaGrade))
 
+    entered_by = Column(String(100), nullable=False)
+    source_system = Column(String(100), nullable=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     polyp = relationship("Polyp", back_populates="histology")
 
