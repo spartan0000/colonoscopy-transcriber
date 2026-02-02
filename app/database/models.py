@@ -40,6 +40,13 @@ class ResectionMethod(enum.Enum):
     LIFT_AND_RESECT = "lift_and_resect"
     OTHER = "other"
 
+class Morphology(enum.Enum):
+    SESSILE = "sessile"
+    PEDUNCULATED = "pedunculated"
+    SEMI_PEDUNCULATED = "semi_pedunculated"
+    FLAT = "flat"
+    OTHER = "other"
+
 
 class Procedure(Base):
     __tablename__ = "procedures"
@@ -73,9 +80,9 @@ class Polyp(Base):
 
     polyp_id = Column(Integer, primary_key = True)
     procedure_id = Column(Integer, ForeignKey('procedures.procedure_id', ondelete="CASCADE"), nullable=False)
-    location = Column(String(100))
+    location = Column(Enum(PolypLocation), nullable=False)
     size_mm = Column(Float, nullable=False)
-    morphology = Column(String(100))
+    morphology = Column(Enum(Morphology))
     resection_method = Column(Enum(ResectionMethod), nullable=False)
     resection_complete = Column(Boolean)
     retrieved = Column(Boolean)

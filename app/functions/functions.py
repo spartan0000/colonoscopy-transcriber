@@ -11,7 +11,7 @@ import json
 load_dotenv()
 
 from app.functions.clients import chat_client, hnz_client, transcribe_client, whisper_client
-from app.models.colonoscopy import ColonoscopyReport
+
 
 BASE_PATH = Path(__file__).parent.parent
 PROMPT_PATH = BASE_PATH / 'prompts'
@@ -50,6 +50,8 @@ async def transcribe_audio(file_path: str) -> str:
         )
     return transcription
 
+
+#uses whisper to get transcription with timestamps
 async def get_timestamps(file_path: str) -> dict:
     
     with open(file_path, 'rb') as audio_file:
