@@ -6,7 +6,7 @@ import enum
 
 Base = declarative_base()
 
-
+###Enums
 class PathologyType(enum.Enum):
     TUBULAR_ADENOMA = "tubular_adenoma"
     VILLOUS_ADENOMA = "villous_adenoma"
@@ -47,7 +47,18 @@ class Morphology(enum.Enum):
     FLAT = "flat"
     OTHER = "other"
 
+###Lookup Tables
 
+class PolypLocationLookup(Base):
+    __tablename__ = "polyp_location_lookup"
+
+    location_code = Column(String(50), primary_key=True)
+    display_name = Column(String(50), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+
+
+###Main Tables
 class Procedure(Base):
     __tablename__ = "procedures"
     __table_args__ = (
@@ -68,7 +79,7 @@ class Procedure(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    polyps = relationship("Polyp", back_populates="procedure", cascade="all, delete-orphan")
+    polyps = relationship("Polyp", back_populates="location_ref")
 
 
 
@@ -80,7 +91,8 @@ class Polyp(Base):
 
     polyp_id = Column(Integer, primary_key = True)
     procedure_id = Column(Integer, ForeignKey('procedures.procedure_id', ondelete="CASCADE"), nullable=False)
-    location = Column(Enum(PolypLocation), nullable=False)
+    #location = Column(Enum(PolypLocation), nullable=False)
+    location_code = Column(String, ForeignKey("polyp_location_lookup.location_code"), nullable=False)
     size_mm = Column(Float, nullable=False)
     morphology = Column(Enum(Morphology))
     resection_method = Column(Enum(ResectionMethod), nullable=False)
@@ -90,6 +102,7 @@ class Polyp(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     procedure = relationship("Procedure", back_populates="polyps")
+    location_ref = relationship("PolypLocationLookup", back_populates="polyps")
     histology = relationship("Histology", back_populates="polyp", uselist=False, cascade="all, delete-orphan")
 
 
