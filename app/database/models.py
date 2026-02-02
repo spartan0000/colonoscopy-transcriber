@@ -56,7 +56,7 @@ class PolypLocationLookup(Base):
     display_name = Column(String(50), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
-
+    polyps = relationship("Polyp", back_populates="location_ref")
 
 ###Main Tables
 class Procedure(Base):
@@ -79,7 +79,7 @@ class Procedure(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    polyps = relationship("Polyp", back_populates="location_ref")
+    polyps = relationship("Polyp", back_populates="procedure", cascade="all, delete-orphan")
 
 
 
