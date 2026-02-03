@@ -58,6 +58,8 @@ class PolypLocationLookup(Base):
 
     polyps = relationship("Polyp", back_populates="location_ref")
 
+   
+
 ###Main Tables
 class Procedure(Base):
     __tablename__ = "procedures"
