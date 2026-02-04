@@ -13,10 +13,11 @@ from app.database.models import (
     PathologyType,
     PolypLocation,
     DysplasiaGrade,
-    Morphology
+    Morphology,
+    PolypLocationLookup,
 )
 
-locations = list(PolypLocation)
+
 resection_methods = list(ResectionMethod)
 pathology_types = list(PathologyType)
 dysplasia_grades = list(DysplasiaGrade)
@@ -24,6 +25,7 @@ morphologies = list(Morphology)
 
 def seed_database(n_patients:int):
     session = SessionLocal()
+    locations = session.query(PolypLocationLookup).filter(PolypLocationLookup.is_active==True).all()
 
     for i in range(1, n_patients+1):
         proc = Procedure(
@@ -40,7 +42,7 @@ def seed_database(n_patients:int):
     
         for _ in range(randint(1,5)):
             polyp = Polyp(
-                location = choice(locations),
+                
                 size_mm = randint(1,10),
                 morphology = choice(morphologies),
                 resection_method = choice(resection_methods),
@@ -56,6 +58,7 @@ def seed_database(n_patients:int):
                 source_system = 'seed_data',
                 created_at = datetime.now()
             )
+            polyp.location_ref = choice(locations)
             polyp.histology = histology
             proc.polyps.append(polyp)
     

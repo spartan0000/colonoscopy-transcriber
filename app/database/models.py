@@ -82,6 +82,7 @@ class Procedure(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     polyps = relationship("Polyp", back_populates="procedure", cascade="all, delete-orphan")
+    specimen = relationship("Specimen", back_populates="procedure", cascade="all, delete-orphan")
 
 
 
@@ -92,6 +93,7 @@ class Polyp(Base):
     )
 
     polyp_id = Column(Integer, primary_key = True)
+    specimen_id = Column(Integer, ForeignKey("specimens.specimen_id"), nullable=True)
     procedure_id = Column(Integer, ForeignKey('procedures.procedure_id', ondelete="CASCADE"), nullable=False)
     #location = Column(Enum(PolypLocation), nullable=False)
     location_code = Column(String, ForeignKey("polyp_location_lookup.location_code"), nullable=False)
@@ -109,11 +111,13 @@ class Polyp(Base):
 
 
 
+
 class Histology(Base):
     __tablename__ = 'histology'
 
     histology_id = Column(Integer, primary_key = True)
-    polyp_id = Column(Integer, ForeignKey('polyps.polyp_id', ondelete="CASCADE"), nullable=False, unique=True)
+    polyp_id = Column(Integer, ForeignKey("polyps.polyp_id", ondelete="CASCADE"), nullable=False, unique=True)
+    specimen_id = Column(Integer, ForeignKey("specimens.specimen_id", ondelete="CASCADE"), unique=True)
     histology = Column(Enum(PathologyType))
     dysplasia = Column(Enum(DysplasiaGrade))
 
@@ -121,5 +125,17 @@ class Histology(Base):
     source_system = Column(String(100), nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    polyp = relationship("Polyp", back_populates="histology")
 
+    polyp = relationship("Polyp", back_populates="histology")
+    specimen = relationship("Specimen", back_populates="histology")
+
+
+class Specimens(Base):
+    __tablename__ = "specimens"
+    
+    specimen_id = Column(Integer, primary_key=True)
+    procedure_id = Column(Integer, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=False)
+    label = Column(String(50), nullable=False)
+
+    histology = relationship("Histology", back_populates="specimen", cascade="all, delete-orphan", uselist=False)
+    procedure = relationship("Procedure", back_populates="specimen")

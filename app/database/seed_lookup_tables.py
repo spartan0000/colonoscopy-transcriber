@@ -27,3 +27,7 @@ def seed_polyp_locations():
             )
             db.add(new_location)
     db.commit() 
+
+
+if __name__ == "__main__":
+    seed_polyp_locations()

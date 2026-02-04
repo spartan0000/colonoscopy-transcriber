@@ -18,3 +18,6 @@ class ColonoscopyReport(BaseModel):
     withdrawal_time: Optional[float] = Field(description="calculated withdrawal time given cecum reached time and procedure end time")
     #need to add other findings such as diveritcula, hemorrhoids, inflammation.
     polyps: List[Polyp]
+
+
+    
