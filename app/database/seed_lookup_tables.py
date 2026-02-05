@@ -1,4 +1,4 @@
-from app.database.models import PolypLocationLookup
+from app.database.models import PolypLocationLookup, EndoscopistLookup
 from app.database.connection import SessionLocal
 
 def seed_polyp_locations():
@@ -28,6 +28,27 @@ def seed_polyp_locations():
             db.add(new_location)
     db.commit() 
 
+def seed_endoscopists():
+
+    db = SessionLocal()
+    endoscopists = [
+        {"endoscopist_id": 1, "endoscopist_name": "Jamie"},
+        {"endoscopist_id": 2, "endoscopist_name": "Chuck"},
+        {"endoscopist_id": 3, "endoscopist_name": "Louisa"},
+        {"endoscopist_id": 4, "endoscopist_name": "David"},
+    ]
+
+    for doc in endoscopists:
+        existing = db.query(EndoscopistLookup).filter_by(enoscopist_id=doc["endoscopist_id"]).first()
+        if not existing:
+            new_doc = EndoscopistLookup(
+                endoscopist_id=doc["endoscopist_id"],
+                endoscopist_name=doc["endoscopist_name"],
+                is_active=True
+            )
+            db.add(new_doc)
+    db.commit()
 
 if __name__ == "__main__":
     seed_polyp_locations()
+    seed_endoscopists()

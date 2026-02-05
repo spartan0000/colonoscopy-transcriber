@@ -59,6 +59,15 @@ class PolypLocationLookup(Base):
     polyps = relationship("Polyp", back_populates="location_ref")
 
    
+class EndoscopistLookup(Base):
+    __tablename__ = "endoscopist_lookup"
+
+    endoscopist_id = Column(Integer, primary_key=True)
+    endoscopist_name = Column(String(100), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    procedures = relationship("Procedure", back_populates="endoscopist_ref")
+
 
 ###Main Tables
 class Procedure(Base):
@@ -71,6 +80,8 @@ class Procedure(Base):
 
     procedure_id = Column(Integer, primary_key=True)
     patient_id = Column(String(50), nullable=False)
+    endoscopist_id = Column(Integer, ForeignKey("endoscopist_lookup.endoscopist_id"), nullable=False)
+    
     procedure_date = Column(DateTime(timezone=True), nullable=False)
     cecum_reached = Column(Boolean, nullable=False)
     withdrawal_time = Column(Float, CheckConstraint("withdrawal_time >=0"), nullable = False)
@@ -82,7 +93,8 @@ class Procedure(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     polyps = relationship("Polyp", back_populates="procedure", cascade="all, delete-orphan")
-    specimen = relationship("Specimen", back_populates="procedure", cascade="all, delete-orphan")
+    specimens = relationship("Specimen", back_populates="procedure", cascade="all, delete-orphan")
+    endoscopist = relationship("EndoscopistLookup", back_populates="procedures")
 
 
 
@@ -117,7 +129,7 @@ class Histology(Base):
 
     histology_id = Column(Integer, primary_key = True)
     polyp_id = Column(Integer, ForeignKey("polyps.polyp_id", ondelete="CASCADE"), nullable=False, unique=True)
-    specimen_id = Column(Integer, ForeignKey("specimens.specimen_id", ondelete="CASCADE"), unique=True)
+    specimen_id = Column(Integer, ForeignKey("specimen.specimen_id", ondelete="CASCADE"), unique=True)
     histology = Column(Enum(PathologyType))
     dysplasia = Column(Enum(DysplasiaGrade))
 
@@ -130,12 +142,12 @@ class Histology(Base):
     specimen = relationship("Specimen", back_populates="histology")
 
 
-class Specimens(Base):
-    __tablename__ = "specimens"
+class Specimen(Base):
+    __tablename__ = "specimen"
     
     specimen_id = Column(Integer, primary_key=True)
     procedure_id = Column(Integer, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=False)
     label = Column(String(50), nullable=False)
 
     histology = relationship("Histology", back_populates="specimen", cascade="all, delete-orphan", uselist=False)
-    procedure = relationship("Procedure", back_populates="specimen")
+    procedure = relationship("Procedure", back_populates="specimens")
