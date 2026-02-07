@@ -11,6 +11,7 @@ import json
 load_dotenv()
 
 from app.functions.clients import chat_client, hnz_client, transcribe_client, whisper_client
+from app.models import ColonoscopyReport
 
 
 BASE_PATH = Path(__file__).parent.parent

@@ -18,7 +18,12 @@ def init_db():
 
     Base.metadata.create_all(engine)
 
-
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     init_db()
