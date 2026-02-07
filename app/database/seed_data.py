@@ -34,6 +34,7 @@ def seed_database(n_patients:int):
             procedure_date = datetime(2026, 2, i, 10, 0, 0),
             cecum_reached = choice([True, True, True, False]),
             withdrawal_time = round(randint(200, 1000) + randint(0,59)/60, 2),
+            endoscopist_id = choice([1,2,3,4]),
             entered_by = 'seeder_script',
             source_system = 'seed_data',
             created_at = datetime.now()
