@@ -10,13 +10,27 @@ import random
 from datetime import datetime
 
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
+
 from dotenv import load_dotenv
 import os
 
 
+app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = ['*'],
+    allow_credentials = False,
+    allow_methods = ['*'],
+    allow_headers = ['*'],
+)
+
+
 load_dotenv()
 
-app = FastAPI()
+
 
 @app.post("/transcribe/")
 async def transcribe(audio_file: str, db: Session=Depends(get_db)):
@@ -59,9 +73,4 @@ async def transcribe(audio_file: str, db: Session=Depends(get_db)):
 
     return output
 
-def main():
-    print("Hello from colonoscopy-transcription!")
 
-
-if __name__ == "__main__":
-    main()
