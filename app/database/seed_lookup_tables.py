@@ -39,7 +39,7 @@ def seed_endoscopists():
     ]
 
     for doc in endoscopists:
-        existing = db.query(EndoscopistLookup).filter_by(enoscopist_id=doc["endoscopist_id"]).first()
+        existing = db.query(EndoscopistLookup).filter_by(endoscopist_id=doc["endoscopist_id"]).first()
         if not existing:
             new_doc = EndoscopistLookup(
                 endoscopist_id=doc["endoscopist_id"],

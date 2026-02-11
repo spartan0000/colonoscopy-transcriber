@@ -8,10 +8,12 @@ from pathlib import Path
 import yaml
 import json
 
+from io import BytesIO
+
 load_dotenv()
 
 from app.functions.clients import chat_client, hnz_client, transcribe_client, whisper_client
-from app.models import ColonoscopyReport
+from app.models.colonoscopy import ColonoscopyReport
 
 
 BASE_PATH = Path(__file__).parent.parent
@@ -53,30 +55,34 @@ async def transcribe_audio(file_path: str) -> str:
 
 
 #uses whisper to get transcription with timestamps
-async def get_timestamps(file_path: str) -> dict:
+async def get_timestamps(audio_file) -> dict:
     
-    with open(file_path, 'rb') as audio_file:
-        timestamps = await whisper_client.audio.transcriptions.create(
-            model = 'whisper',
-            file = audio_file,
-            response_format = 'verbose_json',
-            timestamp_granularities = ['segment'],
+    """
+    audio_file: file-like object containing the audio recording of the colonoscopy procedure
+    
+    
+    """
+    timestamps = await whisper_client.audio.transcriptions.create(
+        model = 'whisper',
+        file = audio_file,
+        response_format = 'verbose_json',
+        timestamp_granularities = ['segment'],
 
-        )
+    )
 
         #get rid of unnecessary data like tokens and logprobs
-        clean_data = {
-            'entire_text':timestamps.text,
-            'segments': [
-        {
-            'start': seg.start,
-            'end':seg.end,
-            'text': seg.text
-        }
-            for seg in timestamps.segments
-            ]
-        }
-        return clean_data
+    clean_data = {
+        'entire_text':timestamps.text,
+        'segments': [
+    {
+        'start': seg.start,
+        'end':seg.end,
+        'text': seg.text
+    }
+        for seg in timestamps.segments
+        ]
+    }
+    return clean_data
 
 #cleaned data (dictionary) then goes into this function to extract polyp data and other endoscopy data in structured format
 async def extract_json(user_input: dict) -> dict:
@@ -107,7 +113,7 @@ def convert_to_report(data: dict) -> str:
 
 #testing and development purposes only
 test_audio_path = DATA_PATH / 'test_audio_1.m4a'
-test_audio_path_2 = DATA_PATH/ 'speech_sample.mp3'
+test_audio_path_2 = DATA_PATH/ 'test_audio_2.mp3'
 
 if __name__ == "__main__":
 
