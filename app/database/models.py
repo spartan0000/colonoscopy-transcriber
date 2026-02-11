@@ -1,8 +1,9 @@
 from sqlalchemy import func, Index, CheckConstraint, UniqueConstraint, Column, Integer, String, Float, ForeignKey, Boolean, DateTime, Text, Enum
-from sqlalchemy.orm import relationship, DeclarativeBase
+from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 
 import enum
 from typing import List, Optional
+from datetime import datetime
 
 class Base(DeclarativeBase):
     pass
@@ -53,22 +54,21 @@ class Morphology(enum.Enum):
 class PolypLocationLookup(Base):
     __tablename__ = "polyp_location_lookup"
 
-    location_code = Column(String(50), primary_key=True)
-    display_name = Column(String(50), nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False)
+    location_code: Mapped[str] = mapped_column(String(50), primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    polyps: List["Polyp"] = relationship("Polyp", back_populates="location_ref") #this is a one to many relationship with the Polyp table
+    polyps: Mapped[List["Polyp"]] = relationship("Polyp", back_populates="location_ref") #this is a one to many relationship with the Polyp table
 
    
 class EndoscopistLookup(Base):
     __tablename__ = "endoscopist_lookup"
 
-    endoscopist_id = Column(Integer, primary_key=True)
-    endoscopist_name = Column(String(100), nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False)
+    endoscopist_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endoscopist_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    procedures: List["Procedure"] = relationship("Procedure", back_populates="endoscopist_ref") #this is a one to many relationship with the Procedure table
-
+    procedures: Mapped[List["Procedure"]] = relationship("Procedure", back_populates="endoscopist_ref") #this is a one to many relationship with the Procedure table
 
 ###Main Tables
 class Procedure(Base):
@@ -79,23 +79,23 @@ class Procedure(Base):
         )
     
 
-    procedure_id: int = Column(Integer, primary_key=True)
-    patient_id: str = Column(String(50), nullable=False)
-    endoscopist_id: int = Column(Integer, ForeignKey("endoscopist_lookup.endoscopist_id"), nullable=False)
+    procedure_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    patient_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    endoscopist_id: Mapped[int] = mapped_column(Integer, ForeignKey("endoscopist_lookup.endoscopist_id"), nullable=False)
     
-    procedure_date = Column(DateTime(timezone=True), nullable=False)
-    cecum_reached: bool = Column(Boolean, nullable=False)
-    withdrawal_time: float = Column(Float, CheckConstraint("withdrawal_time >=0"), nullable = False)
+    procedure_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    cecum_reached: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    withdrawal_time: Mapped[float] = mapped_column(Float, CheckConstraint("withdrawal_time >=0"), nullable = False)
 
-    entered_by: str = Column(String(100), nullable=False)
-    source_system: str = Column(String(100), nullable=False)
+    entered_by: Mapped[str] = mapped_column(String(100), nullable=False)
+    source_system: Mapped[str] = mapped_column(String(100), nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    polyps: List["Polyp"] = relationship("Polyp", back_populates="procedure", cascade="all, delete-orphan")
-    specimens: List["Specimen"] = relationship("Specimen", back_populates="procedure", cascade="all, delete-orphan")
-    endoscopist: "EndoscopistLookup" = relationship("EndoscopistLookup", back_populates="procedures")
+    polyps: Mapped[List["Polyp"]] = relationship("Polyp", back_populates="procedure", cascade="all, delete-orphan")
+    #specimens: List["Specimen"] = relationship("Specimen", back_populates="procedure", cascade="all, delete-orphan")
+    endoscopist_ref: Mapped["EndoscopistLookup"] = relationship("EndoscopistLookup", back_populates="procedures")
 
 
 
@@ -105,50 +105,50 @@ class Polyp(Base):
         CheckConstraint("size_mm >=0", name="chk_size_mm_non_negative"),
     )
 
-    polyp_id = Column(Integer, primary_key = True)
-    specimen_id = Column(Integer, ForeignKey("specimens.specimen_id"), nullable=True)
-    procedure_id = Column(Integer, ForeignKey('procedures.procedure_id', ondelete="CASCADE"), nullable=False)
-    #location = Column(Enum(PolypLocation), nullable=False)
-    location_code = Column(String, ForeignKey("polyp_location_lookup.location_code"), nullable=False)
-    size_mm = Column(Float, nullable=False)
-    morphology = Column(Enum(Morphology))
-    resection_method = Column(Enum(ResectionMethod), nullable=False)
-    resection_complete = Column(Boolean)
-    retrieved = Column(Boolean)
+    polyp_id: Mapped[int] = mapped_column(Integer, primary_key = True)
+    #specimen_id: Mapped[int] = mapped_column(Integer, ForeignKey("specimens.specimen_id"), nullable=True)
+    procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey('procedures.procedure_id', ondelete="CASCADE"), nullable=False)
+    #location = Column(Enum(PolypLocation), nullable=False) #not needed due to line below which uses a look up table instead of enum
+    location_code: Mapped[str] = mapped_column(String(50), ForeignKey("polyp_location_lookup.location_code"), nullable=False)
+    size_mm: Mapped[float] = mapped_column(Float, nullable=False)
+    morphology: Mapped[Morphology] = mapped_column(Enum(Morphology))
+    resection_method: Mapped[ResectionMethod] = mapped_column(Enum(ResectionMethod))
+    resection_complete: Mapped[bool] = mapped_column(Boolean)
+    retrieved: Mapped[bool] = mapped_column(Boolean)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    procedure: "Procedure" = relationship("Procedure", back_populates="polyps")
-    location_ref: "PolypLocationLookup" = relationship("PolypLocationLookup", back_populates="polyps")
-    histology: Optional["Histology"] = relationship("Histology", back_populates="polyp", uselist=False, cascade="all, delete-orphan")
+    procedure: Mapped["Procedure"] = relationship("Procedure", back_populates="polyps")
+    location_ref: Mapped["PolypLocationLookup"] = relationship("PolypLocationLookup", back_populates="polyps")
+    #histology: Optional["Histology"] = relationship("Histology", back_populates="polyp", uselist=False, cascade="all, delete-orphan")
 
 
 
 
-class Histology(Base):
-    __tablename__ = 'histology'
+# class Histology(Base):
+#     __tablename__ = 'histology'
 
-    histology_id = Column(Integer, primary_key = True)
-    polyp_id = Column(Integer, ForeignKey("polyps.polyp_id", ondelete="CASCADE"), nullable=False, unique=True)
-    specimen_id = Column(Integer, ForeignKey("specimen.specimen_id", ondelete="CASCADE"), unique=True)
-    histology = Column(Enum(PathologyType))
-    dysplasia = Column(Enum(DysplasiaGrade))
+#     histology_id = Column(Integer, primary_key = True)
+#     polyp_id = Column(Integer, ForeignKey("polyps.polyp_id", ondelete="CASCADE"), nullable=False, unique=True)
+#     specimen_id = Column(Integer, ForeignKey("specimen.specimen_id", ondelete="CASCADE"), unique=True)
+#     histology = Column(Enum(PathologyType))
+#     dysplasia = Column(Enum(DysplasiaGrade))
 
-    entered_by = Column(String(100), nullable=False)
-    source_system = Column(String(100), nullable=False)
+#     entered_by = Column(String(100), nullable=False)
+#     source_system = Column(String(100), nullable=False)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+#     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    polyp: "Polyp" = relationship("Polyp", back_populates="histology")
-    specimen: "Specimen" = relationship("Specimen", back_populates="histology")
+#     polyp: "Polyp" = relationship("Polyp", back_populates="histology")
+#     specimen: "Specimen" = relationship("Specimen", back_populates="histology")
 
 
-class Specimen(Base):
-    __tablename__ = "specimen"
+# class Specimen(Base):
+#     __tablename__ = "specimen"
     
-    specimen_id = Column(Integer, primary_key=True)
-    procedure_id = Column(Integer, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=False)
-    label = Column(String(50), nullable=False)
+#     specimen_id = Column(Integer, primary_key=True)
+#     procedure_id = Column(Integer, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=False)
+#     label = Column(String(50), nullable=False)
 
-    histology: "Histology" = relationship("Histology", back_populates="specimen", cascade="all, delete-orphan", uselist=False)
-    procedure: "Procedure" = relationship("Procedure", back_populates="specimens")
+#     histology: "Histology" = relationship("Histology", back_populates="specimen", cascade="all, delete-orphan", uselist=False)
+#     procedure: "Procedure" = relationship("Procedure", back_populates="specimens")

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 import random
 from datetime import datetime
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
 from dotenv import load_dotenv
@@ -32,10 +32,12 @@ load_dotenv()
 
 
 
-@app.post("/transcribe/")
-async def transcribe(audio_file: str, db: Session=Depends(get_db)):
-    transcript = get_timestamps(audio_file)
-    output = extract_json(transcript)
+@app.post("/transcribe")
+async def transcribe(file: UploadFile = File(...), db: Session=Depends(get_db)):
+    
+
+    transcript = await get_timestamps(file.file)
+    output = await extract_json(transcript)
 
     procedure = Procedure(
         
@@ -56,7 +58,7 @@ async def transcribe(audio_file: str, db: Session=Depends(get_db)):
 
     for polyp_data in output.get("polyps", []):
         polyp = Polyp(
-            location_ref = db.query(PolypLocationLookup).filter_by(location_code=polyp_data.get("location", "other")).first()
+            location_ref = db.query(PolypLocationLookup).filter_by(location_code=polyp_data.get("location", "other")).first(),
             size_mm = polyp_data.get("size_mm", 0.0),
             morphology = polyp_data.get("morphology"),
             resection_method = polyp_data.get("resection_method", "unknown"),
