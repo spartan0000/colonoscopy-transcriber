@@ -2,16 +2,17 @@ import requests
 import asyncio
 import os
 
-API_URL = "http://localhost:8000/transcribe"
+API_URL = "http://127.0.0.1:8000/transcribe"
+DB_TEST_URL = "http://127.0.0.1:8000/test_db"
 
 from pathlib import Path
 
 BASE_PATH = Path(__file__).parent
 
-async def send_test_data(file_path: str):
+def send_test_data(file_path: str):
 
-    with open(file_path, 'rb') as audio_file:
-        files = {'audio_file': audio_file}
+    with open(file_path, 'rb') as f:
+        files = {'file': (str(file_path), f, "audio/mpeg")}
         response = requests.post(API_URL, files = files)
 
         if response.status_code == 200:
@@ -22,8 +23,18 @@ async def send_test_data(file_path: str):
 
 
 if __name__ == "__main__":
-    test_file_path = BASE_PATH / 'test_audio_2.mp3'
-    asyncio.run(send_test_data(test_file_path))
+    #tests the transcribe endpoint
+    #test_file_path = BASE_PATH / 'test_audio_2.mp3'
+    #send_test_data(test_file_path)
+
+
+    #used only for testing database connection
+    response = requests.post(DB_TEST_URL)
+    print(response.status_code)
+    print(response.json())
+
+
+
 
 
 

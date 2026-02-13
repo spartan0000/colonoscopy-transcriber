@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 import json
 
+from fastapi import UploadFile
 from io import BytesIO
 
 load_dotenv()
@@ -55,16 +56,12 @@ async def transcribe_audio(file_path: str) -> str:
 
 
 #uses whisper to get transcription with timestamps
-async def get_timestamps(audio_file) -> dict:
-    
-    """
-    audio_file: file-like object containing the audio recording of the colonoscopy procedure
+async def get_timestamps(upload_file: UploadFile) -> dict:
     
     
-    """
     timestamps = await whisper_client.audio.transcriptions.create(
         model = 'whisper',
-        file = audio_file,
+        file = (upload_file.filename, upload_file.file, upload_file.content_type),
         response_format = 'verbose_json',
         timestamp_granularities = ['segment'],
 
@@ -117,8 +114,11 @@ test_audio_path_2 = DATA_PATH/ 'test_audio_2.mp3'
 
 if __name__ == "__main__":
 
-    transcript_with_timestamps = asyncio.run(get_timestamps(test_audio_path_2))
-    json_output = asyncio.run(extract_json(transcript_with_timestamps))
+    with open(test_audio_path_2, 'rb') as f:
+        
+
+        transcript_with_timestamps = asyncio.run(get_timestamps(f))
+        json_output = asyncio.run(extract_json(transcript_with_timestamps))
 
     print(transcript_with_timestamps)
     print(json_output)
