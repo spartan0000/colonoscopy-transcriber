@@ -115,9 +115,9 @@ test_audio_path_2 = DATA_PATH/ 'test_audio_2.mp3'
 if __name__ == "__main__":
 
     with open(test_audio_path_2, 'rb') as f:
-        
+        upload_file = UploadFile(filename='test_audio_2.mp3', file=f)
 
-        transcript_with_timestamps = asyncio.run(get_timestamps(f))
+        transcript_with_timestamps = asyncio.run(get_timestamps(upload_file))
         json_output = asyncio.run(extract_json(transcript_with_timestamps))
 
     print(transcript_with_timestamps)

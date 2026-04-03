@@ -24,14 +24,14 @@ def send_test_data(file_path: str):
 
 if __name__ == "__main__":
     #tests the transcribe endpoint
-    #test_file_path = BASE_PATH / 'test_audio_2.mp3'
-    #send_test_data(test_file_path)
+    test_file_path = BASE_PATH / 'test_audio_2.mp3'
+    send_test_data(test_file_path)
 
 
     #used only for testing database connection
-    response = requests.post(DB_TEST_URL)
-    print(response.status_code)
-    print(response.json())
+    # response = requests.post(DB_TEST_URL)
+    # print(response.status_code)
+    # print(response.json())
 
 
 
