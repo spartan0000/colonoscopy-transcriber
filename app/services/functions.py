@@ -11,9 +11,11 @@ import json
 from fastapi import UploadFile
 from io import BytesIO
 
+from sqlalchemy.orm import Session
+
 load_dotenv()
 
-from app.functions.clients import chat_client, hnz_client, transcribe_client, whisper_client
+from app.services.clients import chat_client, hnz_client, transcribe_client, whisper_client
 from app.models.colonoscopy import ColonoscopyReport
 
 
@@ -56,7 +58,7 @@ async def transcribe_audio(file_path: str) -> str:
 
 
 #uses whisper to get transcription with timestamps
-async def get_timestamps(upload_file: UploadFile) -> dict:
+async def transcribe_get_timestamps(upload_file: UploadFile) -> dict:
     
     
     timestamps = await whisper_client.audio.transcriptions.create(
@@ -102,6 +104,23 @@ async def extract_json(user_input: dict) -> dict:
     output = response.output_parsed.model_dump()
     return output
 
+
+def write_transcription_record(db: Session, output):
+    with db.begin():
+        transcription_row = (
+
+        )
+
+        db.add(transcription_row)
+
+        
+
+async def final_transcription(upload_file: UploadFile):
+    clean_data = transcribe_get_timestamps(upload_file)
+    output = extract_json(clean_data)
+    return output
+
+
 #then into this function to generate a final report in PDF
 def convert_to_report(data: dict) -> str:
     pass
@@ -117,7 +136,7 @@ if __name__ == "__main__":
     with open(test_audio_path_2, 'rb') as f:
         upload_file = UploadFile(filename='test_audio_2.mp3', file=f)
 
-        transcript_with_timestamps = asyncio.run(get_timestamps(upload_file))
+        transcript_with_timestamps = asyncio.run(transcribe_get_timestamps(upload_file))
         json_output = asyncio.run(extract_json(transcript_with_timestamps))
 
     print(transcript_with_timestamps)
