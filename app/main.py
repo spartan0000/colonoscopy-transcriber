@@ -30,6 +30,8 @@ app.add_middleware(
 
 load_dotenv()
 
+#for development and testing of the db connection only.
+###################################################
 @app.post("/test_db")
 async def test_db(db: Session = Depends(get_db)):
      
@@ -50,7 +52,7 @@ async def test_db(db: Session = Depends(get_db)):
     db.refresh(dummy)
     
     return {'dummy': dummy.procedure_id}
-
+##################################################
 
 @app.post("/transcribe")
 async def transcribe(file: UploadFile = File(...), db: Session=Depends(get_db)):
