@@ -59,7 +59,7 @@ class PolypLocationLookup(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     polyps: Mapped[List["Polyp"]] = relationship("Polyp", back_populates="location_ref") #this is a one to many relationship with the Polyp table
-
+    findings: Mapped[List["Finding"]] = relationship("Finding", back_populates="location_ref") #one to many relationship with the Finding table (for non-polyp findings that still have a location)
    
 class EndoscopistLookup(Base):
     __tablename__ = "endoscopist_lookup"
@@ -96,7 +96,7 @@ class Procedure(Base):
     polyps: Mapped[List["Polyp"]] = relationship("Polyp", back_populates="procedure", cascade="all, delete-orphan")
     #specimens: List["Specimen"] = relationship("Specimen", back_populates="procedure", cascade="all, delete-orphan")
     endoscopist_ref: Mapped["EndoscopistLookup"] = relationship("EndoscopistLookup", back_populates="procedures")
-
+    findings: Mapped[List["Finding"]] = relationship("Finding", back_populates="procedure", cascade="all, delete-orphan")
 
 
 class Polyp(Base):
@@ -123,7 +123,19 @@ class Polyp(Base):
     #histology: Optional["Histology"] = relationship("Histology", back_populates="polyp", uselist=False, cascade="all, delete-orphan")
 
 
+class Finding(Base):
+    __tablename__ = 'finding'
 
+    finding_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey('procedures.procedure_id', ondelete="CASCADE"), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    location_code: Mapped[str] = mapped_column(String(50), ForeignKey("polyp_location_lookup.location_code"), nullable=True)
+
+    biopsy_taken: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    procedure: Mapped["Procedure"] = relationship("Procedure", back_populates="findings")
+    location_ref: Mapped["PolypLocationLookup"] = relationship("PolypLocationLookup", back_populates="findings") #using the polyp location lookup table for both polyps and other findings (somewhat confusing though)
 
 # class Histology(Base):
 #     __tablename__ = 'histology'
