@@ -26,5 +26,6 @@ async def transcribe(file: UploadFile = File(...), db: Session=Depends(get_db)):
 
     return {
         "transcription_result": transcription_result,
-        "extracted_data": extracted_data
+        "extracted_data": extracted_data,
+        "full_report": full_report
     }
