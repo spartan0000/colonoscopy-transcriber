@@ -81,6 +81,7 @@ class Procedure(Base):
 
     procedure_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     patient_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    patient_name: Mapped[str] = mapped_column(String(100), nullable=False) 
     endoscopist_id: Mapped[int] = mapped_column(Integer, ForeignKey("endoscopist_lookup.endoscopist_id"), nullable=False)
     
     procedure_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

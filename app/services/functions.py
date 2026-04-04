@@ -3,10 +3,15 @@ import os
 
 from dotenv import load_dotenv
 import asyncio
+import json
 
 from pathlib import Path
 import yaml
 import json
+
+
+import random
+from datetime import date, datetime, timedelta
 
 from fastapi import UploadFile
 from io import BytesIO
@@ -16,7 +21,8 @@ from sqlalchemy.orm import Session
 load_dotenv()
 
 from app.services.clients import chat_client, hnz_client, transcribe_client, whisper_client
-from app.models.colonoscopy import ColonoscopyReport
+from app.models.colonoscopy import ColonoscopyReport, ProcedureMetadata, ColonoscopyReportWithMetadata
+from app.database.models import Procedure, Polyp, Finding, EndoscopistLookup, PolypLocationLookup
 
 
 BASE_PATH = Path(__file__).parent.parent
@@ -69,6 +75,8 @@ async def transcribe_get_timestamps(upload_file: UploadFile) -> dict:
 
     )
 
+    
+
         #get rid of unnecessary data like tokens and logprobs
     clean_data = {
         'entire_text':timestamps.text,
@@ -87,6 +95,8 @@ async def transcribe_get_timestamps(upload_file: UploadFile) -> dict:
 async def extract_json(user_input: dict) -> dict:
     prompt = load_prompt('extraction_prompt.yaml')
     
+    
+
     transcript_text = f"""
     full text: {user_input['entire_text']}
     segments: {json.dumps(user_input['segments'], indent = 2)}
@@ -101,24 +111,90 @@ async def extract_json(user_input: dict) -> dict:
         text_format = ColonoscopyReport,
     )
 
+
+    try:
+        response.output_parsed.model_dump()
+    except Exception as e:
+        print(f"Error parsing response; {e}, raw response: {response}")
+
     output = response.output_parsed.model_dump()
     return output
 
+###function to generate fake metadata for testing purposes. Eventually, will need to source the metadata from primary data source.  
 
-def write_transcription_record(db: Session, output):
+def generate_fake_data(transcribed_report: ColonoscopyReport):
+    names = ['Hamish McGregor', 'Ben Bong', 'Graham Whitebait', 'Sophie Trout']
+    nhis = ['ABC1234', 'ABC7890', 'XYZ4343', 'LLL1111']
+    
+
+    metadata = ProcedureMetadata(
+        patient_name = random.choice(names),
+        patient_NHI = random.choice(nhis),
+        procedure_date = date.today() - timedelta(days = random.randint(0,60)),
+        endoscopist_id = random.randint(1,4)
+    )
+
+    full_report = ColonoscopyReportWithMetadata(
+        metadata = metadata,
+        report = transcribed_report
+    )
+    return full_report
+
+
+
+
+
+
+def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMetadata):
+    
     with db.begin():
-        transcription_row = (
-
+        
+        procedure = Procedure(
+            patient_id = full_report.metadata.patient_NHI,
+            patient_name = full_report.metadata.patient_name,
+            procedure_date = full_report.metadata.procedure_date,
+            endoscopist_id = full_report.metadata.endoscopist_id
+            withdrawal_time = full_report.report.extracted_data.withdrawal_time,
+            cecum_reached = full_report.report.extracted_data.cecum_reached,
+            
         )
+        
+        for polyp in full_report.report.extracted_data.polyps:
+            procedure.polyps.append(
+                Polyp(
+                    size_mm = polyp.size_mm,
+                    location_code = polyp.location,
+                    morphology = polyp.morphology,
+                    resection_method = polyp.resection_method,
+                    resection_complete = polyp.resection_complete,
+                    retrieved = polyp.retrieved,
 
-        db.add(transcription_row)
+                )
+                
+            )
+        for finding in full_report.report.extracted_data.findings:
+            procedure.findings.append(
+                Finding(
+                    description = finding.description,
+                    location_code = finding.location,
+                    biopsy_taken = finding.biopsy_taken,
+                    
+                )
+            )
+
+        db.add(procedure)
+        db.commit()
+        db.refresh(procedure)
 
         
 
-async def final_transcription(upload_file: UploadFile):
+async def final_transcription(upload_file: UploadFile, db: Session):
     clean_data = transcribe_get_timestamps(upload_file)
     output = extract_json(clean_data)
-    return output
+    full_report = generate_fake_data(output)
+    write_transcription_record(db = db, full_report = full_report)
+
+    return full_report
 
 
 #then into this function to generate a final report in PDF
