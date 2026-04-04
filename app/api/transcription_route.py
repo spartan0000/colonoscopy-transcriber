@@ -18,11 +18,11 @@ async def transcribe(file: UploadFile = File(...), db: Session=Depends(get_db)):
     transcription_result = await functions.transcribe_get_timestamps(file)
     extracted_data = await functions.extract_json(transcription_result)
 
-    #write to database
+    full_report = functions.generate_fake_data(extracted_data) #fake data for now, replace with real metadata extraction
 
-    functions.write_transcription_record(db, transcription_result, extracted_data)###this function currently doesn't do any writing.  need to implement actual writing logic
+    functions.write_transcription_record(db=db, full_report = full_report)
 
-    
+
 
     return {
         "transcription_result": transcription_result,
