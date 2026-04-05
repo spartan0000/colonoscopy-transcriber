@@ -1,5 +1,25 @@
+import sqlalchemy
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from app.database.models import Base
+
 from app.database.models import PolypLocationLookup, EndoscopistLookup
-from app.database.connection import TestSessionLocal
+
+import os
+
+
+from dotenv import load_dotenv
+load_dotenv()
+
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+
+test_engine = create_engine(TEST_DATABASE_URL)
+
+TestSessionLocal = sessionmaker(bind=test_engine)
+
+def init_test_db():
+
+    Base.metadata.create_all(test_engine)
 
 def seed_polyp_locations():
 
@@ -50,5 +70,7 @@ def seed_endoscopists():
     db.commit()
 
 if __name__ == "__main__":
+    init_test_db()
     seed_polyp_locations()
     seed_endoscopists()
+    

@@ -38,11 +38,10 @@ def db_session():
 def client_db(db_session):
     """override the get_db dependency to use the testing database session"""
 
-    def override_get_db():
-        yield db_session
-        
+    
+
     from app.database.connection import get_db
-    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db] = lambda: db_session
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
@@ -58,11 +57,11 @@ def client_no_db():
         yield c
     app.dependency_overrides.clear()
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_db():
-    """create the test database schema before tests run, drop it after tests are done"""
-    Base.metadata.create_all(test_engine)
-    yield
-    Base.metadata.drop_all(test_engine)
+# @pytest.fixture(scope="session", autouse=True)
+# def setup_test_db():
+#     """create the test database schema before tests run, drop it after tests are done"""
+#     Base.metadata.create_all(test_engine)
+#     yield
+#     Base.metadata.drop_all(test_engine)
 
 

@@ -23,31 +23,31 @@ class DysplasiaGrade(enum.Enum):
     HIGH_GRADE = "high_grade"
     NONE = "none"
 
-class PolypLocation(enum.Enum):
-    CECUM = "cecum"
-    ASCENDING_COLON = "ascending_colon"
-    HEPATIC_FLEXURE = "hepatic_flexure"
-    TRANSVERSE_COLON = "transverse_colon"
-    SPLENIC_FLEXURE = "splenic_flexure"
-    DESCENDING_COLON = "descending_colon"
-    SIGMOID_COLON = "sigmoid_colon"
-    RECTUM = "rectum"
-    ANUS = "anus"
-    OTHER = "other"
+# class PolypLocation(enum.Enum):
+#     CECUM = "cecum"
+#     ASCENDING_COLON = "ascending_colon"
+#     HEPATIC_FLEXURE = "hepatic_flexure"
+#     TRANSVERSE_COLON = "transverse_colon"
+#     SPLENIC_FLEXURE = "splenic_flexure"
+#     DESCENDING_COLON = "descending_colon"
+#     SIGMOID_COLON = "sigmoid_colon"
+#     RECTUM = "rectum"
+#     ANUS = "anus"
+#     OTHER = "other"
 
-class ResectionMethod(enum.Enum):
-    COLD_SNARE = "cold_snare"
-    HOT_SNARE = "hot_snare"
-    BIOPSY_FORCEPS = "biopsy_forceps"
-    LIFT_AND_RESECT = "lift_and_resect"
-    OTHER = "other"
+# class ResectionMethod(enum.Enum):
+#     COLD_SNARE = "cold_snare"
+#     HOT_SNARE = "hot_snare"
+#     BIOPSY_FORCEPS = "biopsy_forceps"
+#     LIFT_AND_RESECT = "lift_and_resect"
+#     OTHER = "other"
 
-class Morphology(enum.Enum):
-    SESSILE = "sessile"
-    PEDUNCULATED = "pedunculated"
-    SEMI_PEDUNCULATED = "semi_pedunculated"
-    FLAT = "flat"
-    OTHER = "other"
+# class Morphology(enum.Enum):
+#     SESSILE = "sessile"
+#     PEDUNCULATED = "pedunculated"
+#     SEMI_PEDUNCULATED = "semi_pedunculated"
+#     FLAT = "flat"
+#     OTHER = "other"
 
 ###Lookup Tables
 
@@ -88,8 +88,8 @@ class Procedure(Base):
     cecum_reached: Mapped[bool] = mapped_column(Boolean, nullable=False)
     withdrawal_time: Mapped[float] = mapped_column(Float, CheckConstraint("withdrawal_time >=0"), nullable = False)
 
-    entered_by: Mapped[str] = mapped_column(String(100), nullable=False)
-    source_system: Mapped[str] = mapped_column(String(100), nullable=False)
+    entered_by: Mapped[str] = mapped_column(String(100), nullable=True)
+    source_system: Mapped[str] = mapped_column(String(100), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -112,8 +112,8 @@ class Polyp(Base):
     #location = Column(Enum(PolypLocation), nullable=False) #not needed due to line below which uses a look up table instead of enum
     location_code: Mapped[str] = mapped_column(String(50), ForeignKey("polyp_location_lookup.location_code"), nullable=False)
     size_mm: Mapped[float] = mapped_column(Float, nullable=False)
-    morphology: Mapped[Morphology] = mapped_column(Enum(Morphology))
-    resection_method: Mapped[ResectionMethod] = mapped_column(Enum(ResectionMethod))
+    morphology: Mapped[str] = mapped_column(String(50), nullable=False)
+    resection_method: Mapped[str] = mapped_column(String(50), nullable=True)
     resection_complete: Mapped[bool] = mapped_column(Boolean)
     retrieved: Mapped[bool] = mapped_column(Boolean)
     

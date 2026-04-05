@@ -142,9 +142,6 @@ def generate_fake_data(transcribed_report: ColonoscopyReport):
 
 
 
-
-
-
 def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMetadata):
     
     with db.begin():
@@ -153,13 +150,13 @@ def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMe
             patient_id = full_report.metadata.patient_NHI,
             patient_name = full_report.metadata.patient_name,
             procedure_date = full_report.metadata.procedure_date,
-            endoscopist_id = full_report.metadata.endoscopist_id
-            withdrawal_time = full_report.report.extracted_data.withdrawal_time,
-            cecum_reached = full_report.report.extracted_data.cecum_reached,
+            endoscopist_id = full_report.metadata.endoscopist_id,
+            withdrawal_time = full_report.report.withdrawal_time,
+            cecum_reached = full_report.report.cecum_reached,
             
         )
         
-        for polyp in full_report.report.extracted_data.polyps:
+        for polyp in full_report.report.polyps:
             procedure.polyps.append(
                 Polyp(
                     size_mm = polyp.size_mm,
@@ -172,7 +169,7 @@ def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMe
                 )
                 
             )
-        for finding in full_report.report.extracted_data.findings:
+        for finding in full_report.report.findings:
             procedure.findings.append(
                 Finding(
                     description = finding.description,
@@ -183,8 +180,8 @@ def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMe
             )
 
         db.add(procedure)
-        db.commit()
-        db.refresh(procedure)
+        
+    db.refresh(procedure)
 
         
 
