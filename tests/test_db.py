@@ -25,7 +25,7 @@ def test_end_to_end(db_session):
         withdrawal_time = 500,
         polyps = [
             {
-                'polyp_id': 'polyp_1',
+                'polyp_id': 1,
                 'size_mm': 5,
                 'location': 'sigmoid_colon',
                 'morphology': 'sessile',
@@ -34,7 +34,7 @@ def test_end_to_end(db_session):
                 'retrieved': True
             },
             {
-                'polyp_id': 'polyp_2',
+                'polyp_id': 2,
                 'size_mm': 10,
                 'location': 'transverse_colon',
                 'morphology': 'pedunculated',
