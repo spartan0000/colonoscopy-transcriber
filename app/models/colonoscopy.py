@@ -1,10 +1,10 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Literal
-from datetime import date
+from datetime import date   
 
 class Polyp(BaseModel):
-    polyp_id: str = Field(description = "unique identifier for the polyp in order of appearance")
-    size_mm: Optional[float] = Field(default = 0,description = "size of the polyp in millimeters")
+    polyp_id: Optional[int] = Field(default = None, description = "unique identifier for the polyp in order of appearance")
+    size_mm: Optional[float] = Field(gt=0,default = None, description = "size of the polyp in millimeters")
     location: Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"]
     morphology: Literal["sessile", "pedunculated", "semi_pedunculated", "flat", "other"] = Field(default = None, description = "morphological classification of the polyp(sessile, pedunculated, flat, etc.)")
     resection_method: Literal["snare", "cold_snare", "hot_snare", "biopsy_forceps", "lift_and_resect", "other"] = Field(default = None, description = "method used to resect the polyp")
@@ -12,7 +12,7 @@ class Polyp(BaseModel):
     retrieved: Optional[bool] = Field(default = None, description = "whether the polyp was retrieved")
 
 class Finding(BaseModel):
-    finding_id: Optional[str] = Field(default = None, description = "unique identifier for the finding in order of appearance")
+    finding_id: Optional[int] = Field(default = None, description = "unique identifier for the finding in order of appearance")
     description: Optional[str] = Field(default = None, description = "description of the finding")
     location: Optional[Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"]] = Field(default = None, description = "location of the finding if applicable")
     biopsy_taken: Optional[bool] = Field(default = None, description = "whether a biopsy was taken for this finding")
