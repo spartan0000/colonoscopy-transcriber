@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, List, Literal
 from datetime import date   
 
@@ -21,6 +21,18 @@ class Finding(BaseModel):
 
 class ColonoscopyReport(BaseModel):
     cecum_reached: Optional[bool] = Field(description="whether the cecum was reached or not")
+    @field_validator("cecum_reached", mode = "before"))
+    def validate_cecum_reached(cls, value):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            v = value.lower()
+            if v in ["true", "yes", "1"]:
+                return True
+            elif v in ["false", "no", "0"]:
+                return False
+        raise ValueError("cecum_reached must be a boolean or a string representing a boolean value")
+
 
     cecum_reached_time: Optional[str] = Field(default = None, description="timestamp when the cecum was reached")
     procedure_end_time: Optional[str] = Field(default = None, description="timestamp when the procedure ended")
