@@ -140,44 +140,52 @@ def generate_fake_data(transcribed_report: ColonoscopyReport):
     )
     return full_report
 
+def map_polyp(polyp):
+    return Polyp(
+        
+        size_mm = polyp.size_mm,
+        location_code = polyp.location,
+        morphology = polyp.morphology,
+        resection_method = polyp.resection_method,
+        resection_complete = polyp.resection_complete,
+        retrieved = polyp.retrieved,
+
+    )
+
+def map_findings(finding):
+    return Finding(
+        
+        description = finding.description,
+        location_code = finding.location,
+        biopsy_taken = finding.biopsy_taken
+    )
+
+def map_procedure(report, metadata):
+    return Procedure(
+        patient_id = metadata.patient_NHI,
+        patient_name = metadata.patient_name,
+        procedure_date = metadata.procedure_date,
+        endoscopist_id = metadata.endoscopist_id,
+        withdrawal_time = report.withdrawal_time,
+        cecum_reached = report.cecum_reached,
+            
+    )
 
 
 def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMetadata):
-    
+    metadata = full_report.metadata
+    report = full_report.report
     with db.begin():
         
-        procedure = Procedure(
-            patient_id = full_report.metadata.patient_NHI,
-            patient_name = full_report.metadata.patient_name,
-            procedure_date = full_report.metadata.procedure_date,
-            endoscopist_id = full_report.metadata.endoscopist_id,
-            withdrawal_time = full_report.report.withdrawal_time,
-            cecum_reached = full_report.report.cecum_reached,
-            
-        )
+        procedure = map_procedure(report, metadata)
         
-        for polyp in full_report.report.polyps:
-            procedure.polyps.append(
-                Polyp(
-                    size_mm = polyp.size_mm,
-                    location_code = polyp.location,
-                    morphology = polyp.morphology,
-                    resection_method = polyp.resection_method,
-                    resection_complete = polyp.resection_complete,
-                    retrieved = polyp.retrieved,
-
-                )
+        for polyp in report.polyps:
+            procedure.polyps.append(map_polyp(polyp))
                 
-            )
-        for finding in full_report.report.findings:
-            procedure.findings.append(
-                Finding(
-                    description = finding.description,
-                    location_code = finding.location,
-                    biopsy_taken = finding.biopsy_taken,
-                    
-                )
-            )
+            
+        for finding in report.findings:
+            procedure.findings.append(map_findings(finding))
+                
 
         db.add(procedure)
         
