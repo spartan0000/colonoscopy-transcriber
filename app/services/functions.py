@@ -140,6 +140,8 @@ def generate_fake_data(transcribed_report: ColonoscopyReport):
     )
     return full_report
 
+###maping functions to convert from pydantic models to sqlalchemy models for writing to the database.
+
 def map_polyp(polyp):
     return Polyp(
         
