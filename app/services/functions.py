@@ -123,7 +123,7 @@ async def extract_json(user_input: dict) -> dict:
 ###function to generate fake metadata for testing purposes. Eventually, will need to source the metadata from primary data source.  
 
 def generate_fake_data(transcribed_report: ColonoscopyReport):
-    names = ['Hamish McGregor', 'Ben Bong', 'Graham Whitebait', 'Sophie Trout']
+    names = ['Bob Marley', 'Ben Franklin', 'Stevie Nicks', 'Santa Claus']
     nhis = ['ABC1234', 'ABC7890', 'XYZ4343', 'LLL1111']
     
 
