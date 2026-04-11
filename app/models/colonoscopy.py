@@ -21,7 +21,7 @@ class Finding(BaseModel):
 
 class ColonoscopyReport(BaseModel):
     cecum_reached: Optional[bool] = Field(description="whether the cecum was reached or not")
-    @field_validator("cecum_reached", mode = "before"))
+    @field_validator("cecum_reached", mode = "before")
     def validate_cecum_reached(cls, value):
         if isinstance(value, bool):
             return value

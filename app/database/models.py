@@ -106,6 +106,10 @@ class Polyp(Base):
         CheckConstraint("size_mm >=0", name="chk_size_mm_non_negative"),
     )
 
+    
+    ###need to decide which of these are really nullable and which are not and make sure it matches the pydantic model.###
+
+
     polyp_id: Mapped[int] = mapped_column(Integer, primary_key = True)
     #specimen_id: Mapped[int] = mapped_column(Integer, ForeignKey("specimens.specimen_id"), nullable=True)
     procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey('procedures.procedure_id', ondelete="CASCADE"), nullable=False)

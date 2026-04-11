@@ -1,6 +1,8 @@
 import pytest
 from pydantic import ValidationError
 from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
+from app.database.models import Procedure
+from app.services.functions import map_polyp, map_findings, map_procedure
 from datetime import date
 
 #test the Polyp pydantic model
@@ -194,3 +196,81 @@ def test_boolean_coercion(value, expected):
     )
 
     assert r.cecum_reached == expected
+
+#teset that size_mm can be passed as a string and is coerced to a float by pydantics
+def test_polyp_size_as_string():
+    p = Polyp(
+        polyp_id = 1,
+        size_mm = "5.0",
+        location = 'ascending_colon', 
+    )
+
+    assert p.size_mm == 5.0
+    assert isinstance(p.size_mm, float)
+
+
+#test mapping function
+
+def test_map_polyp():
+    p = Polyp(
+        polyp_id = 1,
+        size_mm = 5.0,
+        location = 'ascending_colon',
+        morphology = 'sessile',
+        resection_method = 'snare',
+        resection_complete = True,
+        retrieved = True,
+    )
+    mapped = map_polyp(p)
+
+    assert mapped.size_mm == p.size_mm
+    assert mapped.location_code == p.location
+    assert mapped.morphology == p.morphology
+    assert mapped.resection_method == p.resection_method
+    assert mapped.retrieved == p.retrieved
+
+def test_map_polyp_optional_fields():
+    p = Polyp(
+        polyp_id = 1,
+        location = 'cecum',
+
+    )
+
+    mapped = map_polyp(p)
+    assert mapped.resection_method == None
+    assert mapped.resection_complete == None
+    assert mapped.retrieved == None
+
+def test_zero_polyp_size():
+    with pytest.raises(ValidationError):
+        p = Polyp(
+            polyp_id = 1,
+            size_mm = 0.0,
+            location = 'ascending_colon',
+            
+        )
+
+def test_map_polyp_relationship():
+    p = Polyp(
+        polyp_id = 1,
+        size_mm = 5.0,
+        location = 'ascending_colon',
+
+    )
+    procedure = Procedure(
+        patient_id = "ABC1234",
+        patient_name = "Test Patient",
+        procedure_date = date.today(),
+        endoscopist_id = 1,
+        cecum_reached = True,
+        withdrawal_time = 1.0,
+        created_at = date.today()
+
+    )
+
+    polyp = map_polyp(p)
+    procedure.polyps.append(polyp)
+
+    assert polyp in procedure.polyps
+    assert polyp.procedure == procedure
+
