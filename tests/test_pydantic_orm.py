@@ -197,7 +197,7 @@ def test_boolean_coercion(value, expected):
 
     assert r.cecum_reached == expected
 
-#teset that size_mm can be passed as a string and is coerced to a float by pydantics
+#test that size_mm can be passed as a string and is coerced to a float by pydantics
 def test_polyp_size_as_string():
     p = Polyp(
         polyp_id = 1,
@@ -209,7 +209,9 @@ def test_polyp_size_as_string():
     assert isinstance(p.size_mm, float)
 
 
-#test mapping function
+#test mapping functions - answers the question - given clean input from the pydantic models, does the mapping function produce the expected sqlalchemy model structures
+#no db connection required.  db connection and writing is in the test_db.py file
+
 
 def test_map_polyp():
     p = Polyp(
@@ -273,4 +275,68 @@ def test_map_polyp_relationship():
 
     assert polyp in procedure.polyps
     assert polyp.procedure == procedure
+
+def test_mapping_does_not_mutate(): #test that the mapping function does not mutate the original pydantic model
+    p = Polyp(
+        polyp_id = 1,
+        size_mm = 5.0,
+        location = 'ascending_colon',
+        morphology = 'sessile',
+    )
+
+    _ = map_polyp(p)
+
+    assert p.size_mm == 5.0
+    assert p.location == 'ascending_colon'
+
+def test_map_procedure():
+    metadata = ProcedureMetadata(
+        patient_name = "test patient",
+        patient_NHI = "ABC1234",
+        procedure_date = date.today(),
+        endoscopist_id = 1
+    )
+
+    report = ColonoscopyReport(
+        cecum_reached = True,
+        withdrawal_time = 5.0
+    )
+
+    proc = map_procedure(report, metadata)
+
+    assert proc.patient_id == "ABC1234"
+    assert proc.patient_name == "test patient"
+    assert proc.cecum_reached == True
+    assert proc.withdrawal_time == 5.0
+
+
+def test_full_mapping():
+    metadata = ProcedureMetadata(
+        patient_name = "test patient",
+        patient_NHI = "ABC1234",
+        procedure_date = date.today(),
+        endoscopist_id = 1
+    )
+
+    report = ColonoscopyReport(
+        cecum_reached = True,
+        withdrawal_time = 5.0,
+        polyps = [
+            {
+                'polyp_id': 1,
+                'size_mm': 5.0,
+                'location': 'ascending_colon',
+                'morphology': 'sessile',
+            }
+        ]
+    )
+
+    procedure = map_procedure(report, metadata)
+
+    for polyp in report.polyps:
+        procedure.polyps.append(map_polyp(polyp))
+    
+    assert len(procedure.polyps) ==  1
+
+
 
