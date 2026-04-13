@@ -3,9 +3,11 @@ import pytest
 from datetime import datetime
 
 from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata
-from app.database.models import Procedure, Polyp, Finding, EndoscopistLookup, PolypLocationLookup
+from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup
 
 from app.services import functions
+
+from sqlalchemy.exc import IntegrityError
 
 
 
@@ -64,7 +66,7 @@ def test_end_to_end(db_session):
 
     functions.write_transcription_record(db_session, full_report)
 
-    procedure = db_session.query(Procedure).filter_by(patient_id = "ABCD1234").first()
+    procedure = db_session.query(ProcedureModel).filter_by(patient_id = "ABCD1234").first()
 
     assert procedure is not None
     assert procedure.patient_name == "Papa Smurf"
@@ -73,3 +75,29 @@ def test_end_to_end(db_session):
     assert procedure.polyps[0].size_mm == 5
     assert procedure.polyps[0].location_code == "sigmoid_colon"
 
+def test_polyp_size_constraint(db_session, procedure):
+    
+    polyp = PolypModel(
+        procedure = procedure,
+        location_code = "sigmoid_colon",
+        size_mm = -5,
+        morphology = "sessile"
+
+    )
+
+    db_session.add(polyp)
+
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+
+def test_missing_morphology(db_session, procedure):
+    polyp = PolypModel(
+        procedure = procedure,
+        location_code = "cecum",
+        size_mm = 2.0,
+        morphology = None
+    )
+    db_session.add(polyp)
+
+    with pytest.raises(IntegrityError):
+        db_session.commit()

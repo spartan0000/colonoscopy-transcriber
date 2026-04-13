@@ -2,7 +2,7 @@ from app.database.connection import SessionLocal
 from app.services.functions import transcribe_get_timestamps, extract_json
 from app.database.connection import SessionLocal, get_db
 
-from app.database.models import Procedure, Polyp, PolypLocationLookup, EndoscopistLookup
+from app.database.models import ProcedureModel, PolypModel, PolypLocationLookup, EndoscopistLookup
 
 from sqlalchemy.orm import Session
 
@@ -37,7 +37,7 @@ load_dotenv()
 @app.post("/test_db")
 async def test_db(db: Session = Depends(get_db)):
      
-    dummy = Procedure(
+    dummy = ProcedureModel(
         patient_id = "abcd1234",
         endoscopist_id = 2,
         procedure_date = datetime.now(),
