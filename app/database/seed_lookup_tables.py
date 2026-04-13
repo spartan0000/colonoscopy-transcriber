@@ -1,9 +1,11 @@
 from app.database.models import PolypLocationLookup, EndoscopistLookup
 from app.database.connection import TestSessionLocal
 
-def seed_polyp_locations():
 
-    db = TestSessionLocal()
+
+def seed_polyp_locations(db):
+
+    
     polyp_locations = [
         {"location_code": "cecum", "display_name": "Cecum"},
         {"location_code": "ascending_colon", "display_name": "Ascending Colon"},
@@ -28,9 +30,9 @@ def seed_polyp_locations():
             db.add(new_location)
     db.commit() 
 
-def seed_endoscopists():
+def seed_endoscopists(db):
 
-    db = TestSessionLocal()
+    
     endoscopists = [
         {"endoscopist_id": 1, "endoscopist_name": "Jamie"},
         {"endoscopist_id": 2, "endoscopist_name": "Chuck"},
@@ -50,5 +52,6 @@ def seed_endoscopists():
     db.commit()
 
 if __name__ == "__main__":
-    seed_polyp_locations()
-    seed_endoscopists()
+    db = TestSessionLocal()
+    seed_polyp_locations(db)
+    seed_endoscopists(db)

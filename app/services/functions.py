@@ -22,7 +22,7 @@ load_dotenv()
 
 from app.services.clients import chat_client, hnz_client, transcribe_client, whisper_client
 from app.models.colonoscopy import ColonoscopyReport, ProcedureMetadata, ColonoscopyReportWithMetadata
-from app.database.models import Procedure, Polyp, Finding, EndoscopistLookup, PolypLocationLookup
+from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup
 
 
 BASE_PATH = Path(__file__).parent.parent
@@ -143,7 +143,7 @@ def generate_fake_data(transcribed_report: ColonoscopyReport):
 ###maping functions to convert from pydantic models to sqlalchemy models for writing to the database.
 
 def map_polyp(polyp):
-    return Polyp(
+    return PolypModel(
         
         size_mm = polyp.size_mm,
         location_code = polyp.location,
@@ -155,7 +155,7 @@ def map_polyp(polyp):
     )
 
 def map_findings(finding):
-    return Finding(
+    return FindingModel(
         
         description = finding.description,
         location_code = finding.location,
@@ -163,7 +163,7 @@ def map_findings(finding):
     )
 
 def map_procedure(report, metadata):
-    return Procedure(
+    return ProcedureModel(
         patient_id = metadata.patient_NHI,
         patient_name = metadata.patient_name,
         procedure_date = metadata.procedure_date,

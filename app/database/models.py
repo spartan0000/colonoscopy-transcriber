@@ -58,8 +58,8 @@ class PolypLocationLookup(Base):
     display_name: Mapped[str] = mapped_column(String(50), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    polyps: Mapped[List["Polyp"]] = relationship("Polyp", back_populates="location_ref") #this is a one to many relationship with the Polyp table
-    findings: Mapped[List["Finding"]] = relationship("Finding", back_populates="location_ref") #one to many relationship with the Finding table (for non-polyp findings that still have a location)
+    polyps: Mapped[List["PolypModel"]] = relationship("PolypModel", back_populates="location_ref") #this is a one to many relationship with the Polyp table
+    findings: Mapped[List["FindingModel"]] = relationship("FindingModel", back_populates="location_ref") #one to many relationship with the Finding table (for non-polyp findings that still have a location)
    
 class EndoscopistLookup(Base):
     __tablename__ = "endoscopist_lookup"
@@ -68,10 +68,10 @@ class EndoscopistLookup(Base):
     endoscopist_name: Mapped[str] = mapped_column(String(100), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    procedures: Mapped[List["Procedure"]] = relationship("Procedure", back_populates="endoscopist_ref") #this is a one to many relationship with the Procedure table
+    procedures: Mapped[List["ProcedureModel"]] = relationship("ProcedureModel", back_populates="endoscopist_ref") #this is a one to many relationship with the Procedure table
 
 ###Main Tables
-class Procedure(Base):
+class ProcedureModel(Base):
     __tablename__ = "procedures"
     __table_args__ = (
         UniqueConstraint("patient_id", "procedure_date", name="uq_patient_procedure_date"),
@@ -94,13 +94,13 @@ class Procedure(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    polyps: Mapped[List["Polyp"]] = relationship("Polyp", back_populates="procedure", cascade="all, delete-orphan")
+    polyps: Mapped[List["PolypModel"]] = relationship("PolypModel", back_populates="procedure", cascade="all, delete-orphan")
     #specimens: List["Specimen"] = relationship("Specimen", back_populates="procedure", cascade="all, delete-orphan")
     endoscopist_ref: Mapped["EndoscopistLookup"] = relationship("EndoscopistLookup", back_populates="procedures")
-    findings: Mapped[List["Finding"]] = relationship("Finding", back_populates="procedure", cascade="all, delete-orphan")
+    findings: Mapped[List["FindingModel"]] = relationship("FindingModel", back_populates="procedure", cascade="all, delete-orphan")
 
 
-class Polyp(Base):
+class PolypModel(Base):
     __tablename__ = "polyps"
     __table_args__ = (
         CheckConstraint("size_mm >=0", name="chk_size_mm_non_negative"),
@@ -116,19 +116,19 @@ class Polyp(Base):
     #location = Column(Enum(PolypLocation), nullable=False) #not needed due to line below which uses a look up table instead of enum
     location_code: Mapped[str] = mapped_column(String(50), ForeignKey("polyp_location_lookup.location_code"), nullable=False)
     size_mm: Mapped[float] = mapped_column(Float, nullable=False)
-    morphology: Mapped[str] = mapped_column(String(50), nullable=False)
-    resection_method: Mapped[str] = mapped_column(String(50), nullable=True)
+    morphology: Mapped[str] = mapped_column(String(50))
+    resection_method: Mapped[str] = mapped_column(String(50))
     resection_complete: Mapped[bool] = mapped_column(Boolean)
     retrieved: Mapped[bool] = mapped_column(Boolean)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    procedure: Mapped["Procedure"] = relationship("Procedure", back_populates="polyps")
+    procedure: Mapped["ProcedureModel"] = relationship("ProcedureModel", back_populates="polyps")
     location_ref: Mapped["PolypLocationLookup"] = relationship("PolypLocationLookup", back_populates="polyps")
     #histology: Optional["Histology"] = relationship("Histology", back_populates="polyp", uselist=False, cascade="all, delete-orphan")
 
 
-class Finding(Base):
+class FindingModel(Base):
     __tablename__ = 'finding'
 
     finding_id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -139,7 +139,7 @@ class Finding(Base):
     biopsy_taken: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    procedure: Mapped["Procedure"] = relationship("Procedure", back_populates="findings")
+    procedure: Mapped["ProcedureModel"] = relationship("ProcedureModel", back_populates="findings")
     location_ref: Mapped["PolypLocationLookup"] = relationship("PolypLocationLookup", back_populates="findings") #using the polyp location lookup table for both polyps and other findings (somewhat confusing though)
 
 # class Histology(Base):

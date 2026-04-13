@@ -5,10 +5,14 @@ import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from app.database.connection import get_db
-from app.database.models import Base
+from app.database.models import Base, ProcedureModel, PolypModel, FindingModel
 from app.main import app
 
+from app.database.seed_lookup_tables import seed_endoscopists, seed_polyp_locations
+
 from dotenv import load_dotenv
+
+from datetime import datetime
 
 from fastapi.testclient import TestClient
 
@@ -64,4 +68,25 @@ def client_no_db():
 #     yield
 #     Base.metadata.drop_all(test_engine)
 
+@pytest.fixture(scope = "function")
+def procedure(db_session):
+    proc = ProcedureModel(
+        patient_id = "ABC1234",
+        patient_name = "Santa Claus",
+        procedure_date = datetime(2025,1,1),
+        endoscopist_id = 1,
+        cecum_reached = True,
+        withdrawal_time = 100
+    )
 
+    db_session.add(proc)
+    db_session.commit()
+
+    return proc
+
+@pytest.fixture(scope = "function")
+def seed_lookup(db_session):
+    seed_polyp_locations(db_session)
+    seed_endoscopists(db_session)
+
+    db_session.commit()

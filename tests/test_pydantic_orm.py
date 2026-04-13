@@ -1,9 +1,12 @@
 import pytest
 from pydantic import ValidationError
 from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
-from app.database.models import Procedure
+from app.database.models import ProcedureModel, PolypModel, FindingModel
 from app.services.functions import map_polyp, map_findings, map_procedure
 from datetime import date
+
+from sqlalchemy.exc import IntegrityError
+
 
 #test the Polyp pydantic model
 def test_polyp_minimal():
@@ -259,7 +262,7 @@ def test_map_polyp_relationship():
         location = 'ascending_colon',
 
     )
-    procedure = Procedure(
+    procedure = ProcedureModel(
         patient_id = "ABC1234",
         patient_name = "Test Patient",
         procedure_date = date.today(),
