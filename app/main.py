@@ -6,7 +6,8 @@ from app.database.models import ProcedureModel, PolypModel, PolypLocationLookup,
 
 from sqlalchemy.orm import Session
 
-from app.api.transcription_route import router as transcription_router
+from app.api import transcription_route, procedure_query_route
+
 
 import random
 from datetime import datetime
@@ -32,31 +33,10 @@ app.add_middleware(
 
 load_dotenv()
 
-#for development and testing of the db connection only.
-###################################################
-@app.post("/test_db")
-async def test_db(db: Session = Depends(get_db)):
-     
-    dummy = ProcedureModel(
-        patient_id = "abcd1234",
-        endoscopist_id = 2,
-        procedure_date = datetime.now(),
-        cecum_reached = True,
-        withdrawal_time = 420,
-        entered_by = "test",
-        source_system = "test",
-        created_at = datetime.now(),
-        updated_at = datetime.now(),
-    )
-
-    db.add(dummy)
-    db.commit()
-    db.refresh(dummy)
-    
-    return {'dummy': dummy.procedure_id}
-##################################################
 
 
 
-app.include_router(transcription_router)
+
+app.include_router(transcription_route.router)
+app.include_router(procedure_query_route.router)
 

@@ -1,7 +1,7 @@
 import pytest
 import os
 
-
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from app.database.connection import get_db
@@ -23,6 +23,14 @@ TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 test_engine = create_engine(TEST_DATABASE_URL)
 TestingSessionLocal = sessionmaker(bind=test_engine)
 
+@pytest.fixture(scope="session", autouse=True)
+def engine():
+    test_engine = create_engine(TEST_DATABASE_URL)
+    Base.metadata.drop_all(test_engine)
+    Base.metadata.create_all(test_engine)
+
+    return test_engine
+    
 
 
 @pytest.fixture(scope="function")
@@ -42,10 +50,11 @@ def db_session():
 def client_db(db_session):
     """override the get_db dependency to use the testing database session"""
 
-    
+    def override_get_db():
+        yield db_session
 
     from app.database.connection import get_db
-    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
@@ -84,9 +93,10 @@ def procedure(db_session):
 
     return proc
 
-@pytest.fixture(scope = "function")
+@pytest.fixture(scope = "function", autouse=True)
 def seed_lookup(db_session):
     seed_polyp_locations(db_session)
     seed_endoscopists(db_session)
 
     db_session.commit()
+

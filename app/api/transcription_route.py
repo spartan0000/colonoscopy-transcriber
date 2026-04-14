@@ -25,3 +25,4 @@ async def transcribe(file: UploadFile = File(...), db: Session=Depends(get_db)):
 
 
     return extracted_data
+
