@@ -117,9 +117,9 @@ class PolypModel(Base):
     location_code: Mapped[str] = mapped_column(String(50), ForeignKey("polyp_location_lookup.location_code"), nullable=False)
     size_mm: Mapped[float] = mapped_column(Float, nullable=False)
     morphology: Mapped[str] = mapped_column(String(50))
-    resection_method: Mapped[str] = mapped_column(String(50))
-    resection_complete: Mapped[bool] = mapped_column(Boolean)
-    retrieved: Mapped[bool] = mapped_column(Boolean)
+    resection_method: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    resection_complete: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    retrieved: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
