@@ -167,7 +167,7 @@ def test_unique_patient_date(db_session):
     with pytest.raises(IntegrityError):
         db_session.commit() 
 
-def test_full_pipeline(db_session):
+def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the database in correct format?
     raw = {
         'cecum_reached': True,
         'polyps':[
@@ -202,3 +202,4 @@ def test_full_pipeline(db_session):
 
     assert len(saved.polyps) == 1
     assert saved.polyps[0].size_mm == 5.0
+
