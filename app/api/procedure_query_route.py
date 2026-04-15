@@ -5,7 +5,7 @@ from app.database.models import ProcedureModel, PolypModel
 
 from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, UploadFile, File, Depends
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from app.database.connection import get_db
 
 
@@ -16,7 +16,7 @@ def get_full_procedure(procedure_id: int, db: Session = Depends(get_db)):
     procedure = db.query(ProcedureModel).filter(ProcedureModel.procedure_id == procedure_id).first()
 
     if not procedure:
-        return {"error": "Not found"}
+        raise HTTPException(status_code=404, detail="Procedure not found")
 
     return {
         "procedure_id": procedure_id,

@@ -36,7 +36,6 @@ load_dotenv()
 
 
 
-
 app.include_router(transcription_route.router)
 app.include_router(procedure_query_route.router)
 
