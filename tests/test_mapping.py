@@ -41,14 +41,16 @@ def test_map_polyp_optional_fields():
     assert mapped.resection_complete == None
     assert mapped.retrieved == None
 
-def test_zero_polyp_size():
-    with pytest.raises(ValidationError):
-        p = Polyp(
-            polyp_id = 1,
-            size_mm = 0.0,
-            location = 'ascending_colon',
-            
-        )
+def test_missing_size_is_zero():
+
+    p = Polyp(
+        polyp_id = 1,
+        
+        location = 'ascending_colon',
+        
+    )
+
+    assert p.size_mm == 0
 
 def test_map_polyp_relationship():
     p = Polyp(

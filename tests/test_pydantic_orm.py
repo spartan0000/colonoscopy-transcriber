@@ -3,7 +3,7 @@ from pydantic import ValidationError
 from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
 from app.database.models import ProcedureModel, PolypModel, FindingModel
 from app.services.functions import map_polyp, map_findings, map_procedure
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy.exc import IntegrityError
 
@@ -31,11 +31,11 @@ def test_polyp_full():
     assert polyp.size_mm == 5.0
     assert polyp.morphology == 'sessile'
 
-def test_invalid_locatoin():
+def test_invalid_location():
     with pytest.raises(ValidationError) as e:
         polyp = Polyp(
             polyp_id = 1,
-            location = 'weird_location'
+            location = 'sigmoid'
         )
     assert 'location' in str(e.value)
 
@@ -140,7 +140,7 @@ def test_report_invalid_polyps():
             polyps = [
                 {
                     'polyp_id': 1,
-                    'location': "someplace weird"
+                    'location': "cecal region"
                 }
             ]
         )
@@ -203,7 +203,7 @@ def test_boolean_coercion(value, expected):
 
     assert r.cecum_reached == expected
 
-#test that size_mm can be passed as a string and is coerced to a float by pydantics
+#test that size_mm can be passed as a string and is coerced to a float by pydantic
 def test_polyp_size_as_string():
     p = Polyp(
         polyp_id = 1,
@@ -214,4 +214,59 @@ def test_polyp_size_as_string():
     assert p.size_mm == 5.0
     assert isinstance(p.size_mm, float)
 
+def test_polyp_size_coercion(): #test to see if int passed to the pydantic model is coerced into a float
+    p = Polyp(
+        polyp_id = 1,
+        size_mm = 5,
+        morphology = 'sessile',
+        location = 'cecum'
+    )
 
+    assert p.size_mm == 5.0
+
+
+
+def test_rejects_invalid_input():
+    raw = {
+        'metadata': {
+        'patient_name': 'bob thebuilder',
+        'patient_NHI': 'ABC1234',
+        'endoscopist_id': 1,
+        'procedure_date': datetime(2025,1,1)
+    },
+    'report': {
+        'polyps': [
+            {'polyp_id': 1,
+             'size_mm': 1.0,
+             'location': 'small_bowel'} #invalid location - see if this raises an error
+        ]
+    }
+
+        }
+    
+    with pytest.raises(ValidationError) as e:
+        ColonoscopyReportWithMetadata(**raw)
+    assert 'location' in str(e.value)
+
+def test_partial_llm_output():
+    raw = {
+        'metadata': {
+        'patient_name': 'bob thebuilder',
+        'patient_NHI': 'ABC1234',
+        'endoscopist_id': 1,
+        'procedure_date': datetime(2025,1,1)
+    },
+    'report': {
+        'cecum_reached': True,
+        'polyps': [
+            {'polyp_id': 1,
+             
+             'location': 'cecum'} 
+        ]
+    }
+
+        }
+    
+    out = ColonoscopyReportWithMetadata(**raw)
+
+    assert out.report.polyps[0].size_mm == 0
