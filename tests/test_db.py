@@ -203,3 +203,46 @@ def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the 
     assert len(saved.polyps) == 1
     assert saved.polyps[0].size_mm == 5.0
 
+def test_full_pipeline_with_api_endpoint(db_session, client_db): #does raw JSON (from the LLM) end up in the database in correct format and can we retrieve it with the api endpoint
+    raw = {
+        'cecum_reached': True,
+        'polyps':[
+            {
+                'polyp_id': 1,
+                'location': 'cecum',
+                'morphology': 'sessile',
+                'size_mm':5.0
+            }
+        ],
+        'withdrawal_time': 100,
+
+    }
+
+    raw_metadata = {
+        'patient_name': 'bob thebuilder',
+        'patient_NHI': 'ABC1234',
+        'endoscopist_id': 1,
+        'procedure_date': datetime(2025,1,1)
+    }
+    #validate the data
+    metadata = ProcedureMetadata(**raw_metadata)
+    report = ColonoscopyReport(**raw)
+
+    #persist in the database
+    procedure = map_procedure(report, metadata)
+    for polyp in report.polyps:
+        procedure.polyps.append(map_polyp(polyp))
+
+    db_session.add(procedure)
+    db_session.commit()
+
+    #retrieve data via api endpoint
+    response = client_db.get(f"/procedures/{procedure.procedure_id}/full")
+    
+    data = response.json()
+    print(data)
+
+    assert response.status_code == 200
+    assert len(data['polyps']) == 1
+    assert data['cecum_reached'] == True
+

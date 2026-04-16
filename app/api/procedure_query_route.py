@@ -11,6 +11,9 @@ from app.database.connection import get_db
 
 router = APIRouter(tags = ['procedure_query'])
 
+########
+#need to decide what other data gets pulled from the db when calling this endpoint
+
 @router.get("/procedures/{procedure_id}/full")
 def get_full_procedure(procedure_id: int, db: Session = Depends(get_db)):
     procedure = db.query(ProcedureModel).filter(ProcedureModel.procedure_id == procedure_id).first()
@@ -20,9 +23,10 @@ def get_full_procedure(procedure_id: int, db: Session = Depends(get_db)):
 
     return {
         "procedure_id": procedure_id,
+        "cecum_reached": procedure.cecum_reached,
         "polyps": [
             {
-                "size_mm": p.size_mm,
+                "size_mm": p.size_mm,    
                 "location_code": p.location_code
             }
             for p in procedure.polyps
