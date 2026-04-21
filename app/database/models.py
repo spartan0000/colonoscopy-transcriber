@@ -88,6 +88,11 @@ class ProcedureModel(Base):
     cecum_reached: Mapped[bool] = mapped_column(Boolean, nullable=False)
     withdrawal_time: Mapped[float] = mapped_column(Float, CheckConstraint("withdrawal_time >=0"), nullable = False)
 
+    bbps_right: Mapped[int] = mapped_column(Integer)
+    bbps_transverse: Mapped[int] = mapped_column(Integer)
+    bbps_left: Mapped[int] = mapped_column(Integer)
+    bbps_total: Mapped[int] = mapped_column(Integer)
+
     entered_by: Mapped[str] = mapped_column(String(100), nullable=True)
     source_system: Mapped[str] = mapped_column(String(100), nullable=True)
 
