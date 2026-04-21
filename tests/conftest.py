@@ -85,7 +85,11 @@ def procedure(db_session):
         procedure_date = datetime(2025,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
-        withdrawal_time = 100
+        withdrawal_time = 100,
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        bbps_total = 3
     )
 
     db_session.add(proc)

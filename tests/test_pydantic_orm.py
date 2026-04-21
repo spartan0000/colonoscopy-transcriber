@@ -163,6 +163,34 @@ def test_metadata_missing_required_field():
             patient_name = "Santa Claus"
         )
 
+def test_bbps():
+    r = ColonoscopyReport(
+        cecum_reached = True,
+        bbps_left = 3,
+        bbps_transverse = 2,
+        bbps_right = 3,
+        bbps_total = 8,
+        polyps = [
+            {'polyp_id': 1,
+             'size_mm' : 5.0,
+             'location': 'sigmoid_colon',
+             },
+             
+        ],
+        findings = [
+            {
+                'finding_id': 1,
+                'description': 'food',
+                'location': 'descending_colon',
+                'biopsy_taken': False
+            }
+        ]
+    )
+
+    assert r.bbps_left == 3
+
+
+
 
 #test full report
 
