@@ -1,25 +1,27 @@
 # Colonoscopy Transcription Tool
 
-> **Work in Progress** — Active development. Core transcription pipeline is functional; database persistence and histology integration are in progress.
+> **Work in Progress** — Active development. Core transcription and persistence pipeline is functional; histology integration and KPI calculations are planned.
 
-An AI-powered backend service that ingests audio recordings of colonoscopy procedures and automatically extracts structured clinical data — procedure milestones, polyp findings, and resection details — eliminating manual documentation burden for endoscopists.
+An AI-powered backend service that ingests audio recordings of colonoscopy procedures and automatically extracts structured clinical data — procedure milestones, bowel prep scores, polyp findings, and other endoscopic findings — eliminating manual documentation burden for endoscopists.
 
 ---
 
 ## Overview
 
-During a colonoscopy, the endoscopist narrates findings aloud in real time: polyp sizes, locations, resection techniques, landmarks reached. This tool captures that audio and transforms it into structured data, ready to populate an electronic medical record or reporting system.
+During a colonoscopy, the endoscopist narrates findings aloud in real time: polyp sizes, locations, resection techniques, bowel prep quality, landmarks reached. This tool captures that audio and transforms it into structured data, ready to populate an electronic medical record or reporting system.
 
 **Current capabilities:**
 - Transcribe procedure audio using Azure Whisper with timestamped segments
-- Extract structured procedure data (cecum reached, withdrawal time, polyp inventory) via GPT with Pydantic-enforced schemas
-- Persist procedures and polyp records to a PostgreSQL database
+- Extract structured procedure data (cecum reached, withdrawal time, BBPS scores, polyp inventory, non-polyp findings) via GPT with Pydantic-enforced schemas
+- Persist procedures, polyps, and findings to a PostgreSQL database via a two-step transcribe → review → write workflow
+- Retrieve full procedure records (with polyps and findings) via a REST endpoint
 
 **Planned:**
 - Link polyp records to histopathology results once available
 - Calculate endoscopist KPIs (adenoma detection rate, withdrawal time compliance, etc.)
 - Recommend surveillance intervals based on polyp burden and histology
 - Generate structured PDF procedure reports
+- Source patient metadata from primary data system (currently placeholder)
 
 ---
 
@@ -29,32 +31,53 @@ During a colonoscopy, the endoscopist narrates findings aloud in real time: poly
 Audio File (m4a/mp3)
         │
         ▼
-  Azure Whisper API
-  (timestamped transcript)
+  POST /transcribe
+  ┌──────────────────────────────┐
+  │ Azure Whisper API            │
+  │ (timestamped transcript)     │
+  │           │                  │
+  │           ▼                  │
+  │ Azure GPT (structured        │
+  │ extraction) + Pydantic       │
+  └──────────────────────────────┘
         │
         ▼
-  Azure GPT (structured extraction)
-  + Pydantic schema validation
+  ColonoscopyReportWithMetadata JSON
+  ┌─────────────────────────────────┐
+  │ metadata                         │
+  │   ├─ patient_name               │
+  │   ├─ patient_NHI                │
+  │   ├─ procedure_date             │
+  │   └─ endoscopist_id             │
+  │ report                           │
+  │   ├─ cecum_reached              │
+  │   ├─ cecum_reached_time         │
+  │   ├─ withdrawal_time            │
+  │   ├─ bbps_right/transverse/left │
+  │   ├─ bbps_total                 │
+  │   ├─ polyps[]                   │
+  │   │   ├─ location               │
+  │   │   ├─ size_mm                │
+  │   │   ├─ morphology             │
+  │   │   ├─ resection_method       │
+  │   │   └─ retrieved              │
+  │   └─ findings[]                 │
+  │       ├─ description            │
+  │       ├─ location               │
+  │       └─ biopsy_taken           │
+  └─────────────────────────────────┘
+        │
+        ▼ (user reviews / edits)
+  POST /write
         │
         ▼
-  ColonoscopyReport JSON
-  ┌─────────────────────┐
-  │ cecum_reached        │
-  │ cecum_reached_time   │
-  │ withdrawal_time      │
-  │ polyps[]             │
-  │   ├─ location        │
-  │   ├─ size_mm         │
-  │   ├─ morphology      │
-  │   ├─ resection_method│
-  │   └─ retrieved       │
-  └─────────────────────┘
+  PostgreSQL (procedures + polyps + findings)
         │
         ▼
-  PostgreSQL (procedures + polyps)
+  GET /procedures/{id}/full
         │
         ▼
-  [Planned] Histology linkage → KPIs → Surveillance intervals
+  [Planned] Histology linkage → KPIs → Surveillance intervals → PDF report
 ```
 
 ---
@@ -72,6 +95,7 @@ Audio File (m4a/mp3)
 | Config | python-dotenv + YAML prompts |
 | Package Manager | uv |
 | Python | ≥ 3.13 |
+| Testing | pytest + FastAPI TestClient |
 
 ---
 
@@ -81,27 +105,50 @@ Audio File (m4a/mp3)
 | Column | Type | Description |
 |---|---|---|
 | `procedure_id` | Integer PK | Auto-generated |
-| `patient_id` | String | Patient identifier |
+| `patient_id` | String | Patient NHI number |
+| `patient_name` | String | Patient full name |
 | `endoscopist_id` | FK | Reference to endoscopist |
 | `procedure_date` | DateTime (TZ) | Date/time of procedure |
 | `cecum_reached` | Boolean | Whether cecum was reached |
-| `withdrawal_time` | Float | Minutes from cecum to procedure end |
+| `withdrawal_time` | Float | Minutes from cecum to procedure end (≥ 0) |
+| `bbps_right` | Integer | Boston Bowel Prep Score — right colon (0–3) |
+| `bbps_transverse` | Integer | Boston Bowel Prep Score — transverse colon (0–3) |
+| `bbps_left` | Integer | Boston Bowel Prep Score — left colon (0–3) |
+| `bbps_total` | Integer | Total BBPS (0–9) |
+| `entered_by` | String | User who entered the record |
 | `source_system` | String | Origin of the record |
+| `created_at` | DateTime (TZ) | Auto-set on insert |
+| `updated_at` | DateTime (TZ) | Auto-set on update |
+
+Constraints: unique on `(patient_id, procedure_date)`.
 
 ### `polyps`
 | Column | Type | Description |
 |---|---|---|
 | `polyp_id` | Integer PK | Auto-generated |
 | `procedure_id` | FK | Parent procedure (cascade delete) |
-| `location_code` | FK | Anatomical location |
-| `size_mm` | Float | Polyp size in millimeters |
-| `morphology` | Enum | sessile / pedunculated / flat / other |
-| `resection_method` | Enum | cold_snare / hot_snare / biopsy_forceps / lift_and_resect / other |
+| `location_code` | FK | Anatomical location (lookup table) |
+| `size_mm` | Float | Polyp size in millimeters (≥ 0) |
+| `morphology` | String | sessile / pedunculated / semi_pedunculated / flat / other |
+| `resection_method` | String | snare / cold_snare / hot_snare / biopsy_forceps / lift_and_resect / other |
 | `resection_complete` | Boolean | Complete resection achieved |
 | `retrieved` | Boolean | Specimen retrieved for pathology |
+| `created_at` | DateTime (TZ) | Auto-set on insert |
+
+### `finding`
+Non-polyp endoscopic findings (diverticula, hemorrhoids, inflammation, etc.).
+
+| Column | Type | Description |
+|---|---|---|
+| `finding_id` | Integer PK | Auto-generated |
+| `procedure_id` | FK | Parent procedure (cascade delete) |
+| `description` | Text | Free-text description of the finding |
+| `location_code` | FK | Anatomical location (optional, same lookup table as polyps) |
+| `biopsy_taken` | Boolean | Whether a biopsy was taken |
+| `created_at` | DateTime (TZ) | Auto-set on insert |
 
 ### Lookup Tables
-- **`polyp_location_lookup`** — cecum, ascending colon, hepatic flexure, transverse colon, splenic flexure, descending colon, sigmoid colon, rectum, anus, other
+- **`polyp_location_lookup`** — cecum, ascending_colon, hepatic_flexure, transverse_colon, splenic_flexure, descending_colon, sigmoid_colon, rectum, anus, other
 - **`endoscopist_lookup`** — registered endoscopists
 
 ---
@@ -109,33 +156,88 @@ Audio File (m4a/mp3)
 ## API Endpoints
 
 ### `POST /transcribe`
-Upload a procedure audio file and receive structured findings.
+Upload a procedure audio file. The audio is transcribed and structured data is extracted. Returns a `ColonoscopyReportWithMetadata` object for review before committing to the database. **Does not write to the database.**
 
 **Request:** `multipart/form-data` with an audio file field (`.m4a`, `.mp3`, etc.)
 
 **Response:**
 ```json
 {
+  "metadata": {
+    "patient_name": "Bob Marley",
+    "patient_NHI": "ABC1234",
+    "procedure_date": "2025-04-01",
+    "endoscopist_id": 2
+  },
+  "report": {
+    "cecum_reached": true,
+    "cecum_reached_time": "00:04:12",
+    "procedure_end_time": "00:18:45",
+    "withdrawal_time": 14.55,
+    "bbps_right": 3,
+    "bbps_transverse": 3,
+    "bbps_left": 2,
+    "bbps_total": 8,
+    "polyps": [
+      {
+        "polyp_id": 1,
+        "size_mm": 6.0,
+        "location": "sigmoid_colon",
+        "morphology": "sessile",
+        "resection_method": "cold_snare",
+        "resection_complete": true,
+        "retrieved": true
+      }
+    ],
+    "findings": [
+      {
+        "finding_id": 1,
+        "description": "diverticula in the sigmoid colon",
+        "location": "sigmoid_colon",
+        "biopsy_taken": false
+      }
+    ]
+  }
+}
+```
+
+> **Note:** Patient metadata is currently populated with placeholder data. Real metadata sourcing from a primary system is planned.
+
+---
+
+### `POST /write`
+Accepts a `ColonoscopyReportWithMetadata` body (the output of `/transcribe`, optionally edited) and persists it to the database. Intended to be called after the clinician has reviewed and confirmed the transcription output.
+
+**Request body:** `ColonoscopyReportWithMetadata` (JSON)
+
+**Response:** (in progress — PDF generation planned)
+
+---
+
+### `GET /procedures/{procedure_id}/full`
+Retrieve a stored procedure record with its associated polyps and findings.
+
+**Response:**
+```json
+{
+  "procedure_id": 1,
   "cecum_reached": true,
-  "cecum_reached_time": "00:04:12",
-  "procedure_end_time": "00:18:45",
-  "withdrawal_time": 14.55,
   "polyps": [
     {
-      "polyp_id": "1",
       "size_mm": 6.0,
-      "location": "sigmoid_colon",
-      "morphology": "sessile",
-      "resection_method": "cold_snare",
-      "resection_complete": true,
-      "retrieved": true
+      "location_code": "sigmoid_colon"
+    }
+  ],
+  "findings": [
+    {
+      "description": "diverticula in the sigmoid colon",
+      "biopsy_taken": false
     }
   ]
 }
 ```
 
-### `POST /test_db`
-Development endpoint — creates a dummy procedure record to verify database connectivity.
+Returns `404` if the procedure does not exist. Returns `422` if `procedure_id` is not a valid integer.
 
 ---
 
@@ -158,19 +260,17 @@ Development endpoint — creates a dummy procedure record to verify database con
 
 2. **Configure environment**
 
-   Create a `.env` file in the project root and fill in your credentials:
+   Create a `.env` file in the project root:
    ```env
-   # PostgreSQL
+   # PostgreSQL (production)
    PSQL_DATABASE_URL=postgresql://user:password@localhost:5432/colonoscopy
 
+   # PostgreSQL (test database — used by the test suite)
+   TEST_DATABASE_URL=postgresql://user:password@localhost:5432/colonoscopy_test
+
    # Azure GPT (structured extraction)
-   
 
    # Azure Whisper (transcription)
-   
-
-   # Azure Transcription
-   
    ```
 
 3. **Start the database**
@@ -192,28 +292,66 @@ Development endpoint — creates a dummy procedure record to verify database con
 
 ---
 
+## Running Tests
+
+The test suite uses a dedicated test database (set `TEST_DATABASE_URL` in `.env`). Each test function gets its own database session that is rolled back after the test, so tests are isolated and repeatable.
+
+```bash
+uv run pytest
+```
+
+### Test modules
+
+| File | What it covers |
+|---|---|
+| `tests/test_pydantic_orm.py` | Pydantic model validation — valid inputs, invalid inputs, field coercions, BBPS fields, boolean coercion for `cecum_reached` |
+| `tests/test_mapping.py` | Mapping functions (`map_polyp`, `map_findings`, `map_procedure`) — ensures Pydantic → SQLAlchemy conversion is correct without touching the database |
+| `tests/test_db.py` | Database integration — constraint enforcement (negative size, missing morphology, FK violations, unique patient/date), cascade deletes, end-to-end write pipeline |
+| `tests/test_api.py` | API endpoint tests — `GET /procedures/{id}/full` with various scenarios (no polyps, with polyps, with findings, not found, invalid ID, multi-procedure isolation) |
+
+### Key test fixtures (`conftest.py`)
+
+- `db_session` — isolated transaction-scoped SQLAlchemy session (rolls back after each test)
+- `client_db` — FastAPI `TestClient` with the DB dependency overridden to use the test session
+- `client_no_db` — FastAPI `TestClient` with no DB dependency (for tests that don't write to the database)
+- `procedure` — a pre-seeded `ProcedureModel` fixture for tests that need an existing procedure
+- `seed_lookup` — auto-used fixture that seeds polyp locations and endoscopist lookup tables before each test
+
+---
+
 ## Project Structure
 
 ```
 colonoscopy-transcription/
 ├── app/
-│   ├── main.py                    # FastAPI app, route definitions
+│   ├── main.py                        # FastAPI app entry point, router registration
+│   ├── api/
+│   │   ├── transcription_route.py     # POST /transcribe
+│   │   ├── procedure_query_route.py   # GET /procedures/{id}/full
+│   │   └── write_db_generate_pdf_route.py  # POST /write
 │   ├── database/
-│   │   ├── connection.py          # SQLAlchemy engine and session
-│   │   ├── models.py              # ORM models (procedures, polyps, lookups)
-│   │   ├── seed_data.py           # Synthetic procedure data for testing
-│   │   └── seed_lookup_tables.py  # Reference data (locations, endoscopists)
-│   ├── functions/
-│   │   ├── clients.py             # Azure OpenAI async client setup
-│   │   └── functions.py           # Transcription and extraction logic
+│   │   ├── connection.py              # SQLAlchemy engine and session factory
+│   │   ├── models.py                  # ORM models (procedures, polyps, findings, lookups)
+│   │   ├── seed_data.py               # Synthetic procedure data for development
+│   │   └── seed_lookup_tables.py      # Reference data (locations, endoscopists)
+│   ├── services/
+│   │   ├── clients.py                 # Azure OpenAI async client setup
+│   │   └── functions.py               # Transcription, extraction, mapping, and write logic
 │   ├── models/
-│   │   └── colonoscopy.py         # Pydantic schemas for API I/O
+│   │   └── colonoscopy.py             # Pydantic schemas (Polyp, Finding, ColonoscopyReport,
+│   │                                  #   ProcedureMetadata, ColonoscopyReportWithMetadata)
 │   ├── prompts/
 │   │   ├── transcription_prompt.yaml  # Whisper system prompt
 │   │   └── extraction_prompt.yaml     # GPT extraction system prompt
 │   └── data/
-│       ├── test_audio_1.m4a       # Sample audio for development
-│       └── send_test_data.py      # Script to POST test audio to the API
+│       ├── test_audio_1.m4a           # Sample audio for development
+│       └── send_test_data.py          # Script to POST test audio to the API
+├── tests/
+│   ├── conftest.py                    # Shared fixtures and test DB setup
+│   ├── test_pydantic_orm.py           # Pydantic model validation tests
+│   ├── test_mapping.py                # Pydantic → SQLAlchemy mapping tests
+│   ├── test_db.py                     # Database integration tests
+│   └── test_api.py                    # API endpoint tests
 ├── docker-compose.yaml
 ├── pyproject.toml
 └── .env
@@ -225,8 +363,16 @@ colonoscopy-transcription/
 
 - [x] Audio transcription pipeline (Whisper + timestamped segments)
 - [x] Structured data extraction (GPT + Pydantic)
-- [x] PostgreSQL schema — procedures and polyps
-- [ ] Wire `/transcribe` response to database persistence
+- [x] PostgreSQL schema — procedures, polyps, and non-polyp findings
+- [x] Boston Bowel Prep Score (BBPS) capture and persistence
+- [x] Two-step workflow: `/transcribe` returns structured JSON for review, `/write` persists to database
+- [x] `GET /procedures/{id}/full` — retrieve a procedure with polyps and findings
+- [x] Pydantic validation test suite
+- [x] Mapping layer test suite (Pydantic → ORM)
+- [x] Database integration test suite (constraints, cascades, pipeline)
+- [x] API endpoint test suite
+- [ ] Patient metadata sourcing from primary system (currently placeholder data)
+- [ ] Expand `GET /procedures/{id}/full` response (BBPS, withdrawal time, patient details)
 - [ ] CRUD endpoints for procedures and polyps
 - [ ] Histology data ingestion and polyp linkage
 - [ ] Endoscopist KPI calculations (adenoma detection rate, withdrawal time)

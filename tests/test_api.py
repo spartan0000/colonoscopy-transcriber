@@ -24,7 +24,11 @@ def test_get_procedure(db_session, client_db):
         endoscopist_id = 1,
         procedure_date = datetime(2025,1,1),
         cecum_reached = True,
-        withdrawal_time = 10
+        withdrawal_time = 10,
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        bbps_total = 9
     )
 
     db_session.add(procedure)
@@ -81,6 +85,10 @@ def test_polyps_procedure_relationship(client_db, db_session): #making sure that
         procedure_date = datetime(2025,1,1),
         cecum_reached = True,
         withdrawal_time = 10.0,
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        bbps_total = 9,
         created_at = datetime(2025,1,1)
     )
 
@@ -91,6 +99,10 @@ def test_polyps_procedure_relationship(client_db, db_session): #making sure that
         procedure_date = datetime(2025,1,1),
         cecum_reached = True,
         withdrawal_time = 10.0,
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        bbps_total = 9,
         created_at = datetime(2025,1,1)
     )
 

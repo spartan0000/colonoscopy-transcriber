@@ -170,6 +170,10 @@ def map_procedure(report, metadata):
         endoscopist_id = metadata.endoscopist_id,
         withdrawal_time = report.withdrawal_time,
         cecum_reached = report.cecum_reached,
+        bbps_right = report.bbps_right,
+        bbps_transverse = report.bbps_transverse,
+        bbps_left = report.bbps_left,
+        bbps_total = report.bbps_total
             
     )
 

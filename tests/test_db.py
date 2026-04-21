@@ -26,6 +26,10 @@ def test_end_to_end(db_session):
     mock_extracted_data = ColonoscopyReport(
         cecum_reached = True,
         withdrawal_time = 500,
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        bbps_total = 9,
         polyps = [
             {
                 'polyp_id': 1,
@@ -147,7 +151,11 @@ def test_unique_patient_date(db_session):
         procedure_date = datetime(2024,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
-        withdrawal_time = 10
+        withdrawal_time = 10,
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        bbps_total = 9
     )
 
     proc2 = ProcedureModel(
@@ -156,7 +164,11 @@ def test_unique_patient_date(db_session):
         procedure_date = datetime(2024,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
-        withdrawal_time = 10
+        withdrawal_time = 10,
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        bbps_total = 9
     )
 
     db_session.add(proc1)
@@ -170,6 +182,10 @@ def test_unique_patient_date(db_session):
 def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the database in correct format?
     raw = {
         'cecum_reached': True,
+        'bbps_right' : 3,
+        'bbps_transverse' : 3,
+        'bbps_left' : 3,
+        'bbps_total' : 9,
         'polyps':[
             {
                 'polyp_id': 1,
@@ -206,6 +222,10 @@ def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the 
 def test_full_pipeline_with_api_endpoint(db_session, client_db): #does raw JSON (from the LLM) end up in the database in correct format and can we retrieve it with the api endpoint
     raw = {
         'cecum_reached': True,
+        'bbps_right' : 3,
+        'bbps_transverse' : 3,
+        'bbps_left' : 3,
+        'bbps_total' : 9,
         'polyps':[
             {
                 'polyp_id': 1,
