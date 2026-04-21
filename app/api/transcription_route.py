@@ -20,9 +20,9 @@ async def transcribe(file: UploadFile = File(...), db: Session=Depends(get_db)):
 
     full_report = functions.generate_fake_data(extracted_data) #fake data for now, replace with real metadata extraction
 
-    functions.write_transcription_record(db=db, full_report = full_report)
+    #functions.write_transcription_record(db=db, full_report = full_report) #move this function to the write_db_generate_pdf route
 
 
 
-    return extracted_data
+    return full_report
 

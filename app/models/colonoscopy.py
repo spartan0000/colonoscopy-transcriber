@@ -37,6 +37,10 @@ class ColonoscopyReport(BaseModel):
     cecum_reached_time: Optional[str] = Field(default = None, description="timestamp when the cecum was reached")
     procedure_end_time: Optional[str] = Field(default = None, description="timestamp when the procedure ended")
     withdrawal_time: Optional[float] = Field(default = None, description="calculated withdrawal time given cecum reached time and procedure end time")
+    bbps_right: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the right colon")
+    bbps_transverse: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the transverse colon")
+    bbps_left: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the left colon")
+    bbps_total: Optional[int] = Field(default = None, ge=0, le=9, description="total boston bowel prep score")
     #need to add other findings such as diveritcula, hemorrhoids, inflammation.
     polyps: List[Polyp] = Field(default_factory = list)
     findings: List[Finding] = Field(default_factory = list)
