@@ -24,6 +24,10 @@ def get_full_procedure(procedure_id: int, db: Session = Depends(get_db)):
     return {
         "procedure_id": procedure_id,
         "cecum_reached": procedure.cecum_reached,
+        "bbps_right": procedure.bbps_right,
+        "bbps_transverse": procedure.bbps_transverse,
+        "bbps_left": procedure.bbps_left,
+        "bbps_total": procedure.bbps_total,
         "polyps": [
             {
                 "size_mm": p.size_mm,    

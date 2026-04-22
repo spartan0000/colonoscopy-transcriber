@@ -173,7 +173,7 @@ def map_procedure(report, metadata):
         bbps_right = report.bbps_right,
         bbps_transverse = report.bbps_transverse,
         bbps_left = report.bbps_left,
-        bbps_total = report.bbps_total
+        
             
     )
 
