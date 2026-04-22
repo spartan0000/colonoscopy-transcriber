@@ -89,7 +89,7 @@ def procedure(db_session):
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
-        bbps_total = 3
+        
     )
 
     db_session.add(proc)

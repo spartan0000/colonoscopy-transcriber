@@ -1,4 +1,4 @@
-from sqlalchemy import func, Index, CheckConstraint, UniqueConstraint, Column, Integer, String, Float, ForeignKey, Boolean, DateTime, Text, Enum
+from sqlalchemy import func, Index, CheckConstraint, UniqueConstraint, Column, Integer, String, Float, ForeignKey, Boolean, DateTime, Text, Enum, Computed
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 
 import enum
@@ -75,6 +75,9 @@ class ProcedureModel(Base):
     __tablename__ = "procedures"
     __table_args__ = (
         UniqueConstraint("patient_id", "procedure_date", name="uq_patient_procedure_date"),
+        CheckConstraint("bbps_right BETWEEN 0 AND 3 OR bbps_right IS NULL", name="check_bbps_right"),
+        CheckConstraint("bbps_transverse BETWEEN 0 AND 3 OR bbps_transverse IS NULL", name="check_bbps_transverse"),
+        CheckConstraint("bbps_left BETWEEN 0 AND 3 OR bbps_left IS NULL", name="check_bbps_left"),
         Index("idx_proc_patient_date", "patient_id", "procedure_date")
         )
     
@@ -88,10 +91,22 @@ class ProcedureModel(Base):
     cecum_reached: Mapped[bool] = mapped_column(Boolean, nullable=False)
     withdrawal_time: Mapped[float] = mapped_column(Float, CheckConstraint("withdrawal_time >=0"), nullable = False)
 
-    bbps_right: Mapped[int] = mapped_column(Integer)
-    bbps_transverse: Mapped[int] = mapped_column(Integer)
-    bbps_left: Mapped[int] = mapped_column(Integer)
-    bbps_total: Mapped[int] = mapped_column(Integer)
+    bbps_right: Mapped[int] = mapped_column(Integer, nullable=True)
+    bbps_transverse: Mapped[int] = mapped_column(Integer, nullable=True)
+    bbps_left: Mapped[int] = mapped_column(Integer, nullable=True)
+    bbps_total: Mapped[int] = mapped_column(Integer, Computed(
+        """
+        CASE
+            WHEN bbps_right is NULL
+            OR bbps_transverse is NULL
+            or bbps_left is NULL
+        THEN NULL
+        ELSE bbps_right + bbps_transverse + bbps_left
+        END    
+        """
+    ),
+    nullable=True
+    )
 
     entered_by: Mapped[str] = mapped_column(String(100), nullable=True)
     source_system: Mapped[str] = mapped_column(String(100), nullable=True)

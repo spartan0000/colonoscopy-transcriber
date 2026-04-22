@@ -169,7 +169,7 @@ def test_bbps():
         bbps_left = 3,
         bbps_transverse = 2,
         bbps_right = 3,
-        bbps_total = 8,
+        
         polyps = [
             {'polyp_id': 1,
              'size_mm' : 5.0,

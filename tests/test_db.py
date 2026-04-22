@@ -155,7 +155,7 @@ def test_unique_patient_date(db_session):
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
-        bbps_total = 9
+        
     )
 
     proc2 = ProcedureModel(
@@ -168,7 +168,7 @@ def test_unique_patient_date(db_session):
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
-        bbps_total = 9
+        
     )
 
     db_session.add(proc1)
@@ -179,13 +179,96 @@ def test_unique_patient_date(db_session):
     with pytest.raises(IntegrityError):
         db_session.commit() 
 
+def test_bbps_computed_column(db_session): #does the bbps_total computed column work correctly
+    proc1 = ProcedureModel(
+        patient_id = "ABC1234",
+        patient_name = "santa claus",
+        procedure_date = datetime(2024,1,1),
+        endoscopist_id = 1,
+        cecum_reached = True,
+        withdrawal_time = 10,
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        
+    )
+
+    db_session.add(proc1)
+    db_session.commit()
+
+    r = db_session.query(ProcedureModel).first()
+    assert r.bbps_total == 9
+
+def test_bbps_null_value(db_session): #does a null value for a segment result in null for the total (expected behavior)
+    proc1 = ProcedureModel(
+        patient_id = "ABC1234",
+        patient_name = "santa claus",
+        procedure_date = datetime(2024,1,1),
+        endoscopist_id = 1,
+        cecum_reached = True,
+        withdrawal_time = 10,
+        bbps_right = None,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        
+    )
+
+    db_session.add(proc1)
+    db_session.commit()
+
+    r = db_session.query(ProcedureModel).first()
+
+    assert r.bbps_total == None
+    assert r.bbps_right == None
+
+def test_bbps_insert_update_total(db_session): #does the null bbps_total value update once you enter a valid value for a segment
+    proc1 = ProcedureModel(
+        patient_id = "ABC1234",
+        patient_name = "santa claus",
+        procedure_date = datetime(2024,1,1),
+        endoscopist_id = 1,
+        cecum_reached = True,
+        withdrawal_time = 10,
+        bbps_right = None,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        
+    )
+
+    db_session.add(proc1)
+    db_session.commit()
+
+    proc1.bbps_right = 2
+
+    db_session.commit()
+    db_session.refresh(proc1)
+
+    assert proc1.bbps_total == 8
+
+def test_bbps_invalid_value(db_session):
+    proc1 = ProcedureModel(
+        patient_id = "ABC1234",
+        patient_name = "santa claus",
+        procedure_date = datetime(2024,1,1),
+        endoscopist_id = 1,
+        cecum_reached = True,
+        withdrawal_time = 10,
+        bbps_right = 9, #invalid value - test check constraint
+        bbps_transverse = 3,
+        bbps_left = 3,
+        
+    )
+    db_session.add(proc1)
+    with pytest.raises(IntegrityError) as e:
+        db_session.commit()
+
 def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the database in correct format?
     raw = {
         'cecum_reached': True,
         'bbps_right' : 3,
         'bbps_transverse' : 3,
         'bbps_left' : 3,
-        'bbps_total' : 9,
+        
         'polyps':[
             {
                 'polyp_id': 1,
@@ -225,7 +308,7 @@ def test_full_pipeline_with_api_endpoint(db_session, client_db): #does raw JSON 
         'bbps_right' : 3,
         'bbps_transverse' : 3,
         'bbps_left' : 3,
-        'bbps_total' : 9,
+        
         'polyps':[
             {
                 'polyp_id': 1,
