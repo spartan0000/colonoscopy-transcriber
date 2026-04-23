@@ -135,6 +135,7 @@ def generate_fake_data(transcribed_report: ColonoscopyReport):
     )
 
     full_report = ColonoscopyReportWithMetadata(
+        
         metadata = metadata,
         report = transcribed_report
     )

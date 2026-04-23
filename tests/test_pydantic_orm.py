@@ -297,4 +297,4 @@ def test_partial_llm_output():
     
     out = ColonoscopyReportWithMetadata(**raw)
 
-    assert out.report.polyps[0].size_mm == 0
+    assert out.report.polyps[0].size_mm == None
