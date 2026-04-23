@@ -24,12 +24,13 @@ def test_end_to_end(db_session):
     }
 
     mock_extracted_data = ColonoscopyReport(
+        
         cecum_reached = True,
         withdrawal_time = 500,
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
-        bbps_total = 9,
+        
         polyps = [
             {
                 'polyp_id': 1,
@@ -63,6 +64,7 @@ def test_end_to_end(db_session):
     )
 
     full_report = ColonoscopyReportWithMetadata(
+        
         metadata = metadata,
         report = mock_extracted_data
     )

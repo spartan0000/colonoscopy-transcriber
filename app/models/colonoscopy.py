@@ -1,10 +1,11 @@
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, List, Literal
-from datetime import date   
+from datetime import date, datetime  
+
 
 class Polyp(BaseModel):
     polyp_id: Optional[int] = Field(default = None, description = "unique identifier for the polyp in order of appearance")
-    size_mm: Optional[float] = Field(ge=0, default = 0, description = "size of the polyp in millimeters")
+    size_mm: Optional[float] = Field(ge=0, default = None, description = "size of the polyp in millimeters")
     location: Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"]
     morphology: Literal["sessile", "pedunculated", "semi_pedunculated", "flat", "other"] = Field(default = None, description = "morphological classification of the polyp(sessile, pedunculated, flat, etc.)")
     resection_method: Literal["snare", "cold_snare", "hot_snare", "biopsy_forceps", "lift_and_resect", "other"] = Field(default = None, description = "method used to resect the polyp")
@@ -18,8 +19,15 @@ class Finding(BaseModel):
     biopsy_taken: Optional[bool] = Field(default = None, description = "whether a biopsy was taken for this finding")
 
 
+#draft versions for data returned from transcription endpoint for user validation - intermediate state before final version persisted to database
+
+
+
+
+#final version to be sent to database
 
 class ColonoscopyReport(BaseModel):
+    
     cecum_reached: Optional[bool] = Field(description="whether the cecum was reached or not")
     @field_validator("cecum_reached", mode = "before")
     def validate_cecum_reached(cls, value):
@@ -34,13 +42,13 @@ class ColonoscopyReport(BaseModel):
         raise ValueError("cecum_reached must be a boolean or a string representing a boolean value")
 
 
-    cecum_reached_time: Optional[str] = Field(default = None, description="timestamp when the cecum was reached")
-    procedure_end_time: Optional[str] = Field(default = None, description="timestamp when the procedure ended")
+    cecum_reached_time: Optional[datetime] = Field(default = None, description="timestamp when the cecum was reached")
+    procedure_end_time: Optional[datetime] = Field(default = None, description="timestamp when the procedure ended")
     withdrawal_time: Optional[float] = Field(default = None, description="calculated withdrawal time given cecum reached time and procedure end time")
     bbps_right: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the right colon")
     bbps_transverse: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the transverse colon")
     bbps_left: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the left colon")
-    bbps_total: Optional[int] = Field(default = None, description="total boston bowel prep score")
+    
     #need to add other findings such as diveritcula, hemorrhoids, inflammation.
     polyps: List[Polyp] = Field(default_factory = list)
     findings: List[Finding] = Field(default_factory = list)
@@ -53,6 +61,8 @@ class ProcedureMetadata(BaseModel):
     endoscopist_id: int = Field(default = None, description = "endoscopist_id performing the procedure")
 
 class ColonoscopyReportWithMetadata(BaseModel):
+    
     metadata: ProcedureMetadata
     report: ColonoscopyReport
 
+ 

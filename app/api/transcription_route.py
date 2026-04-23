@@ -7,6 +7,11 @@ from app.models.colonoscopy import ColonoscopyReport
 
 from sqlalchemy.orm import Session
 
+import uuid
+
+def get_draft_id():
+    return str(uuid.uuid4())
+
 router = APIRouter(tags=['transcription'])
 
 @router.post("/transcribe")
@@ -14,6 +19,7 @@ async def transcribe(file: UploadFile = File(...), db: Session=Depends(get_db)):
     """
     handle transcription of uploaded audio file, extract relevant information, return structured JSON output
     """
+    draft_id = get_draft_id()
 
     transcription_result = await functions.transcribe_get_timestamps(file)
     extracted_data = await functions.extract_json(transcription_result)

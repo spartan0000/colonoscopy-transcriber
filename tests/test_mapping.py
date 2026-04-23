@@ -41,7 +41,7 @@ def test_map_polyp_optional_fields():
     assert mapped.resection_complete == None
     assert mapped.retrieved == None
 
-def test_missing_size_is_zero():
+def test_missing_size_is_none():
 
     p = Polyp(
         polyp_id = 1,
@@ -50,7 +50,7 @@ def test_missing_size_is_zero():
         
     )
 
-    assert p.size_mm == 0
+    assert p.size_mm == None
 
 def test_map_polyp_relationship():
     p = Polyp(
