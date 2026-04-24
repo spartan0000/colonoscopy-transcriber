@@ -101,12 +101,14 @@ class ColonoscopyReportFinal(BaseModel):
     
     #need to add other findings such as diveritcula, hemorrhoids, inflammation.
     polyps: List[PolypFinal] = Field(default_factory = list)
-    findings: List[FindingFinal] = Field(default_factory = list)
+    findings: List[FindingFinal] = Field(default_factory = list) 
 
 class ProcedureMetadataFinal(BaseModel):
     patient_name: str = Field(..., description = "name of patient")
     patient_NHI: str = Field(..., description = "NHI number of patient")
+    patient_dob: date
     procedure_date: date 
+    indication: str = Field(..., description="text input for the indication for the procedure") #this could eventually be a very long list or enum of indications
     endoscopist_id: int = Field(..., description = "endoscopist_id performing the procedure")
 
 class ColonoscopyReportWithMetadata(BaseModel):

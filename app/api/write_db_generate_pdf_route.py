@@ -29,4 +29,4 @@ async def create_colonoscopy_report(full_report: ColonoscopyReportWithMetadataFi
 
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to generate PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")

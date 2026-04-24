@@ -4,6 +4,20 @@ from datetime import date, datetime
 
 from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, PolypFinal, FindingFinal
 
+
+
+def _calculate_age(dob: date, procedure_date: date) -> str:
+    """Calculate patient age from DOB and procedure date in YyMm format."""
+    years = procedure_date.year - dob.year
+    months = procedure_date.month - dob.month
+    
+    if months < 0:
+        years -= 1
+        months += 12
+    
+    return f"{years}y{months}m"
+ 
+ 
 def generate_colonoscopy_report_pdf(data: ColonoscopyReportWithMetadataFinal) -> BytesIO:
     """
     Generate a colonoscopy report PDF from structured data.
@@ -13,32 +27,29 @@ def generate_colonoscopy_report_pdf(data: ColonoscopyReportWithMetadataFinal) ->
         
     Returns:
         BytesIO object containing the PDF bytes, positioned at start for reading
-        
-    Suitable for FastAPI route:
-        @app.post("/reports/colonoscopy")
-        async def create_report(data: ColonoscopyReportWithMetadataFinal):
-            pdf_bytes = generate_colonoscopy_report_pdf(data)
-            return StreamingResponse(pdf_bytes, media_type="application/pdf")
     """
+    
+    # Calculate patient age from DOB and procedure date
+    patient_age = _calculate_age(data.metadata.patient_dob, data.metadata.procedure_date)
     
     pdf = FPDF()
     pdf.add_page()
     
-    # Set up fonts and colors
+    # Set up fonts
     pdf.set_font("Helvetica", size=11)
     line_height = 6
     section_spacing = 3
     
-    # ==================== HEADER: PATIENT INFO ====================
-    _add_patient_header(pdf, data.metadata, line_height, section_spacing)
+    # Header: Patient info
+    _add_patient_header(pdf, data.metadata, patient_age, line_height, section_spacing)
     
-    # ==================== PROCEDURE SECTION ====================
+    # Procedure section
     _add_procedure_section(pdf, data.report, line_height, section_spacing)
     
-    # ==================== FINDINGS SECTION ====================
+    # Findings section
     _add_findings_section(pdf, data.report, line_height, section_spacing)
     
-    # ==================== SUMMARY SECTION ====================
+    # Summary section
     _add_summary_section(pdf, data.report, line_height, section_spacing)
     
     # Convert to bytes
@@ -49,19 +60,15 @@ def generate_colonoscopy_report_pdf(data: ColonoscopyReportWithMetadataFinal) ->
     return pdf_output
  
  
-def _add_patient_header(pdf: FPDF, metadata: ProcedureMetadataFinal, line_height: float, section_spacing: float) -> None:
+def _add_patient_header(pdf: FPDF, metadata: ProcedureMetadataFinal, patient_age: str, line_height: float, section_spacing: float) -> None:
     """Add patient identifying information at top of report."""
-    pdf.set_font("Helvetica", "B", size=12)
-    pdf.cell(0, line_height, "COLONOSCOPY REPORT", ln=True)
-    
     pdf.set_font("Helvetica", size=11)
-    pdf.ln(section_spacing)
     
-    # Patient info
+    pdf.cell(0, line_height, f"Date: {metadata.procedure_date.strftime('%d/%m/%Y')}", ln=True)
     pdf.cell(0, line_height, f"Name: {metadata.patient_name}", ln=True)
     pdf.cell(0, line_height, f"NHI: {metadata.patient_NHI}", ln=True)
-    pdf.cell(0, line_height, f"Procedure Date: {metadata.procedure_date.strftime('%d/%m/%Y')}", ln=True)
-    pdf.cell(0, line_height, f"Endoscopist ID: {metadata.endoscopist_id}", ln=True)
+    pdf.cell(0, line_height, f"Age: {patient_age}", ln=True)
+    pdf.cell(0, line_height, f"Indications: {metadata.indication}", ln=True)
     
     pdf.ln(section_spacing)
  
@@ -74,7 +81,6 @@ def _add_procedure_section(pdf: FPDF, report: ColonoscopyReportFinal, line_heigh
     pdf.set_font("Helvetica", size=10)
     pdf.ln(section_spacing - 2)
     
-    # BBPS explanation and scores
     bbps_text = (
         f"After informed consent was obtained, the colonoscope was inserted through the anus and advanced to the cecum. "
         f"The quality of the bowel prep was evaluated using the BBPS (Boston Bowel Preparation Scale) with scores of "
@@ -84,12 +90,6 @@ def _add_procedure_section(pdf: FPDF, report: ColonoscopyReportFinal, line_heigh
     )
     
     _add_wrapped_text(pdf, bbps_text, line_height)
-    
-    # Timing info
-    pdf.ln(section_spacing)
-    pdf.set_font("Helvetica", size=10)
-    withdrawal_minutes = report.withdrawal_time
-    pdf.cell(0, line_height, f"Withdrawal Time: {withdrawal_minutes:.1f} minutes", ln=True)
     
     pdf.ln(section_spacing)
  
@@ -118,14 +118,12 @@ def _add_findings_section(pdf: FPDF, report: ColonoscopyReportFinal, line_height
  
 def _add_polyp_findings(pdf: FPDF, polyps: List[PolypFinal], line_height: float, section_spacing: float) -> None:
     """Format and add polyp findings grouped by location."""
-    # Group polyps by location
     polyps_by_location = {}
     for polyp in polyps:
         if polyp.location not in polyps_by_location:
             polyps_by_location[polyp.location] = []
         polyps_by_location[polyp.location].append(polyp)
     
-    # Display grouped polyps
     for location, location_polyps in polyps_by_location.items():
         polyp_text = _format_polyp_group(location, location_polyps)
         _add_wrapped_text(pdf, polyp_text, line_height)
@@ -140,7 +138,6 @@ def _add_summary_section(pdf: FPDF, report: ColonoscopyReportFinal, line_height:
     
     pdf.set_font("Helvetica", size=10)
     
-    # Summary of polyps
     if report.polyps:
         polyps_by_location = {}
         for polyp in report.polyps:
@@ -155,7 +152,6 @@ def _add_summary_section(pdf: FPDF, report: ColonoscopyReportFinal, line_height:
     else:
         pdf.cell(0, line_height, "- No polyps identified", ln=True)
     
-    # Summary of other findings
     if report.findings:
         for finding in report.findings:
             if finding.description:
@@ -190,7 +186,6 @@ def _format_polyp_group(location: str, polyps: List[PolypFinal]) -> str:
         morphology = polyp.morphology if polyp.morphology else "not specified"
         resection = polyp.resection_method if polyp.resection_method else "not specified"
         complete = "complete" if polyp.resection_complete else "incomplete"
-        retrieved = "retrieved" if polyp.retrieved else "not retrieved"
         
         return (
             f"A {polyp.size_mm}mm polyp was found in the {location_formatted}. "
@@ -199,7 +194,6 @@ def _format_polyp_group(location: str, polyps: List[PolypFinal]) -> str:
             f"Resection and retrieval was {complete}."
         )
     else:
-        # Multiple polyps at same location
         sizes = sorted([p.size_mm for p in polyps])
         size_range = f"{min(sizes)}mm to {max(sizes)}mm"
         morphologies = set(p.morphology for p in polyps if p.morphology)
@@ -243,9 +237,6 @@ def _format_polyp_summary(location: str, polyps: List[PolypFinal]) -> str:
         )
  
  
-def _add_wrapped_text(pdf: FPDF, text: str, line_height: float, max_width: float = 190) -> None:
-    """Add text with word wrapping. Handles long strings intelligently."""
-    pdf.set_font("Helvetica", size=10)
-    
-    # Use FPDF's multi_cell for automatic wrapping
+def _add_wrapped_text(pdf: FPDF, text: str, line_height: float) -> None:
+    """Add text with word wrapping."""
     pdf.multi_cell(0, line_height, text)
