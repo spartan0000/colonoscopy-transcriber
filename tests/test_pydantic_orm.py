@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
+from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp, ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal
 from app.database.models import ProcedureModel, PolypModel, FindingModel
 from app.services.functions import map_polyp, map_findings, map_procedure
 from datetime import date, datetime
@@ -159,7 +159,7 @@ def test_metadata_valid():
 
 def test_metadata_missing_required_field():
     with pytest.raises(ValidationError):
-        m = ProcedureMetadata(
+        m = ProcedureMetadataFinal(
             patient_name = "Santa Claus"
         )
 
