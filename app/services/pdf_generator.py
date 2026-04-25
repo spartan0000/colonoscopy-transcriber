@@ -1,8 +1,9 @@
 from fpdf import FPDF
 from io import BytesIO
 from datetime import date, datetime
+from typing import List
 
-from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, PolypFinal, FindingFinal
+from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal, PolypFinal, FindingFinal
 
 
 

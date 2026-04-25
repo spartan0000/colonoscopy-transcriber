@@ -1,9 +1,9 @@
 import pytest
 from pydantic import ValidationError
-from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp, ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal
+from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp, FindingFinal, PolypFinal, ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal
 from app.database.models import ProcedureModel, PolypModel, FindingModel
 from app.services.functions import map_polyp, map_findings, map_procedure
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from sqlalchemy.exc import IntegrityError
 
@@ -57,12 +57,7 @@ def test_invalid_resection_method():
         )
     assert 'resection_method' in str(e.value)
 
-def test_missing_required_field():
-    with pytest.raises(ValidationError) as e:
-        polyp = Polyp(
-            size_mm = 9.0
-        )
-    assert 'missing' in str(e.value)
+
 
 def test_negative_size():
     
@@ -298,3 +293,74 @@ def test_partial_llm_output():
     out = ColonoscopyReportWithMetadata(**raw)
 
     assert out.report.polyps[0].size_mm == None
+
+
+###test final pydantic model layer that gets sent to database and pdf writer
+
+def test_missing_required_field():
+    with pytest.raises(ValidationError) as e:
+        polyp = PolypFinal(
+            size_mm = 9.0
+        )
+    assert 'missing' in str(e.value)
+
+def test_colonoscopyReportWithMetadataFinal():
+    raw = {
+        'metadata': {
+        'patient_name': 'bob thebuilder',
+        'patient_NHI': 'ABC1234',
+        'patient_dob': date(1940,1,1),
+        'endoscopist_id': 1,
+        'procedure_date': date(2025,1,1),
+        'indication': 'lower gi bleed'
+    },
+    'report': {
+        'cecum_reached': True,
+        'cecum_reached_time': datetime.now(),
+        'procedure_end_time': datetime.now() - timedelta(minutes=5),
+        'withdrawal_time': 5,
+        'bbps_right': 3,
+        'bbps_transverse': 3,
+        'bbps_left': 2,
+        'polyps': [
+            {'polyp_id': 1,
+             'size_mm': 2.0,
+             'location': 'cecum'} 
+        ]
+    }
+
+        }
+    
+    out = ColonoscopyReportWithMetadataFinal(**raw)
+
+    assert out.report.bbps_right == 3
+
+def test_invalid_bbps():
+    raw = {
+        'metadata': {
+        'patient_name': 'bob thebuilder',
+        'patient_NHI': 'ABC1234',
+        'patient_dob': date(1940,1,1),
+        'endoscopist_id': 1,
+        'procedure_date': date(2025,1,1),
+        'indication': 'lower gi bleed'
+    },
+    'report': {
+        'cecum_reached': True,
+        'cecum_reached_time': datetime.now(),
+        'procedure_end_time': datetime.now() - timedelta(minutes=5),
+        'withdrawal_time': 5,
+        'bbps_right': 3,
+        'bbps_transverse': 9, #invalid value
+        'bbps_left': 2,
+        'polyps': [
+            {'polyp_id': 1,
+             'size_mm': 2.0,
+             'location': 'cecum'} 
+        ]
+    }
+
+        }
+    with pytest.raises(ValidationError) as e:
+        ColonoscopyReportWithMetadataFinal(**raw)
+
