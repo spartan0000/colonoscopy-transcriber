@@ -7,9 +7,9 @@ from datetime import date, datetime
 class Polyp(BaseModel):
     polyp_id: Optional[int] = Field(default = None, description = "unique identifier for the polyp in order of appearance")
     size_mm: Optional[float] = Field(ge=0, default = None, description = "size of the polyp in millimeters")
-    location: Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"] = Field(default=None)
-    morphology: Literal["sessile", "pedunculated", "semi_pedunculated", "flat", "other"] = Field(default = None, description = "morphological classification of the polyp(sessile, pedunculated, flat, etc.)")
-    resection_method: Literal["snare", "cold_snare", "hot_snare", "biopsy_forceps", "lift_and_resect", "other"] = Field(default = None, description = "method used to resect the polyp")
+    morphology: Literal["sessile", "pedunculated", "semi_pedunculated", "flat", "other"] = Field(default = None)
+    location: Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"] = Field(default = None)
+    resection_method: Literal["snare", "cold_snare", "hot_snare", "biopsy_forceps", "lift_and_resect", "other"] = Field(default = None)
     resection_complete: Optional[bool] = Field(default = None, description = "whether the polyp resection was complete")
     retrieved: Optional[bool] = Field(default = None, description = "whether the polyp was retrieved")
 
@@ -64,8 +64,8 @@ class PolypFinal(BaseModel):
     polyp_id: int = Field(..., description = "unique identifier for the polyp in order of appearance")
     size_mm: float = Field(..., ge=0, description = "size of the polyp in millimeters")
     location: Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"]
-    morphology: Literal["sessile", "pedunculated", "semi_pedunculated", "flat", "other"] = Field(default = None, description = "morphological classification of the polyp(sessile, pedunculated, flat, etc.)")
-    resection_method: Literal["snare", "cold_snare", "hot_snare", "biopsy_forceps", "lift_and_resect", "other"] = Field(default = None, description = "method used to resect the polyp")
+    morphology: Literal["sessile", "pedunculated", "semi_pedunculated", "flat", "other"] = Field(default = None)
+    resection_method: Literal["snare", "cold_snare", "hot_snare", "biopsy_forceps", "lift_and_resect", "other"] = Field(default = None)
     resection_complete: Optional[bool] = Field(default = None, description = "whether the polyp resection was complete")
     retrieved: Optional[bool] = Field(default = None, description = "whether the polyp was retrieved")
 
