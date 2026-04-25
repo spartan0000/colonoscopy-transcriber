@@ -3,7 +3,7 @@ from pydantic import ValidationError
 from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
 from app.database.models import ProcedureModel, PolypModel, FindingModel
 from app.services.functions import map_polyp, map_findings, map_procedure
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy.exc import IntegrityError
 
@@ -65,7 +65,8 @@ def test_map_polyp_relationship():
         procedure_date = date.today(),
         endoscopist_id = 1,
         cecum_reached = True,
-        withdrawal_time = 1.0,
+        cecum_reached_time = datetime(2025,1,1,10,0),
+        procedure_end_time = datetime(2025,1,1,10,6),
         created_at = date.today()
 
     )

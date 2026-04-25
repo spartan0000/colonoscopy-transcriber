@@ -22,6 +22,7 @@ load_dotenv()
 
 from app.services.clients import chat_client, hnz_client, transcribe_client, whisper_client
 from app.models.colonoscopy import ColonoscopyReport, ProcedureMetadata, ColonoscopyReportWithMetadata
+from app.models.colonoscopy import ColonoscopyReportFinal, ProcedureMetadataFinal, ColonoscopyReportWithMetadataFinal
 from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup
 
 
@@ -125,12 +126,18 @@ async def extract_json(user_input: dict) -> dict:
 def generate_fake_data(transcribed_report: ColonoscopyReport):
     names = ['Bob Marley', 'Ben Franklin', 'Stevie Nicks', 'Santa Claus']
     nhis = ['ABC1234', 'ABC7890', 'XYZ4343', 'LLL1111']
-    
+    dobs = [
+        date(1945,1,1),
+        date(1950,1,1),
+        date(1955,1,1),
+        date(1920,1,1)
+    ]
 
     metadata = ProcedureMetadata(
         patient_name = random.choice(names),
         patient_NHI = random.choice(nhis),
         procedure_date = date.today() - timedelta(days = random.randint(0,60)),
+        patient_dob = random.choice(dobs),
         endoscopist_id = random.randint(1,4)
     )
 
@@ -169,8 +176,9 @@ def map_procedure(report, metadata):
         patient_name = metadata.patient_name,
         procedure_date = metadata.procedure_date,
         endoscopist_id = metadata.endoscopist_id,
-        withdrawal_time = report.withdrawal_time,
         cecum_reached = report.cecum_reached,
+        cecum_reached_time = report.cecum_reached_time,
+        procedure_end_time = report.procedure_end_time,
         bbps_right = report.bbps_right,
         bbps_transverse = report.bbps_transverse,
         bbps_left = report.bbps_left,
@@ -179,7 +187,7 @@ def map_procedure(report, metadata):
     )
 
 
-def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMetadata):
+def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMetadataFinal):
     metadata = full_report.metadata
     report = full_report.report
     with db.begin():

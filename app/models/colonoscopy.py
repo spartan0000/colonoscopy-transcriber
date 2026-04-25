@@ -94,7 +94,7 @@ class ColonoscopyReportFinal(BaseModel):
 
     cecum_reached_time: datetime = Field(..., description="timestamp when the cecum was reached")
     procedure_end_time: datetime = Field(..., description="timestamp when the procedure ended")
-    withdrawal_time: float = Field(..., description="calculated withdrawal time given cecum reached time and procedure end time")
+    #withdrawal_time: float = Field(..., description="calculated withdrawal time given cecum reached time and procedure end time")
     bbps_right: int = Field(..., ge=0, le=3, description="boston bowel prep score for the right colon")
     bbps_transverse: int = Field(..., ge=0, le=3, description="boston bowel prep score for the transverse colon")
     bbps_left: int = Field(..., ge=0, le=3, description="boston bowel prep score for the left colon")
@@ -108,7 +108,7 @@ class ProcedureMetadataFinal(BaseModel):
     patient_NHI: str = Field(..., description = "NHI number of patient")
     patient_dob: date
     procedure_date: date 
-    indication: str = Field(..., description="text input for the indication for the procedure") #this could eventually be a very long list or enum of indications
+    indication: str = Field(default = None, description="text input for the indication for the procedure") #this could eventually be a very long list or enum of indications
     endoscopist_id: int = Field(..., description = "endoscopist_id performing the procedure")
 
 class ColonoscopyReportWithMetadata(BaseModel):

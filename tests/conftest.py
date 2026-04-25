@@ -12,7 +12,7 @@ from app.database.seed_lookup_tables import seed_endoscopists, seed_polyp_locati
 
 from dotenv import load_dotenv
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi.testclient import TestClient
 
@@ -85,7 +85,8 @@ def procedure(db_session):
         procedure_date = datetime(2025,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
-        withdrawal_time = 100,
+        cecum_reached_time = datetime(2025,1,1,10,0),
+        procedure_end_time = datetime(2025,1,1,10,6),
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
