@@ -1,14 +1,15 @@
 import pytest 
 
-from datetime import datetime
+from datetime import datetime, date
 
-from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata
+from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal
 from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup
 from app.services.functions import map_procedure, map_findings, map_polyp
 
 from app.services import functions
 
 from sqlalchemy.exc import IntegrityError
+
 
 
 
@@ -23,10 +24,11 @@ def test_end_to_end(db_session):
         
     }
 
-    mock_extracted_data = ColonoscopyReport(
+    mock_extracted_data = ColonoscopyReportFinal(
         
         cecum_reached = True,
-        withdrawal_time = 500,
+        cecum_reached_time=datetime(2025,1,1,10,0),
+        procedure_end_time=datetime(2025,1,1,10,6),
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
@@ -55,15 +57,16 @@ def test_end_to_end(db_session):
 
     )
 
-    metadata = ProcedureMetadata(
+    metadata = ProcedureMetadataFinal(
         patient_name = "Papa Smurf",
         patient_NHI = "ABCD1234",
         procedure_date = today.date(),
+        patient_dob = datetime(1950,1,1),
         endoscopist_id = 1
 
     )
 
-    full_report = ColonoscopyReportWithMetadata(
+    full_report = ColonoscopyReportWithMetadataFinal(
         
         metadata = metadata,
         report = mock_extracted_data
@@ -146,6 +149,71 @@ def test_delete_procedure_cascade(db_session, procedure):
     r = db_session.query(PolypModel).all()
     assert len(r) == 0
 
+##################################################################################
+### need to also test new constraints around procedure times, withdrawal times ###
+##################################################################################
+
+def test_withdrawal_time_computed(db_session):
+    proc1 = ProcedureModel(
+        patient_id = "ABC1234",
+        patient_name = "santa claus",
+        procedure_date = datetime(2024,1,1),
+        endoscopist_id = 1,
+        cecum_reached = True,
+        cecum_reached_time = datetime(2025,1,1,10,0),
+        procedure_end_time = datetime(2025,1,1,10,6),
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        
+    )
+
+    db_session.add(proc1)
+    db_session.commit()
+    db_session.refresh(proc1)
+
+    assert proc1.withdrawal_time == 6.0
+
+def test_withdrawal_time_cecum_not_reached(db_session):
+    proc1 = ProcedureModel(
+        patient_id = "ABC1234",
+        patient_name = "santa claus",
+        procedure_date = datetime(2024,1,1),
+        endoscopist_id = 1,
+        cecum_reached = False,
+        cecum_reached_time = None,
+        procedure_end_time = datetime(2025,1,1,10,6),
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        
+    )
+    db_session.add(proc1)
+    db_session.commit()
+    db_session.refresh(proc1)
+
+    assert proc1.withdrawal_time is None
+
+def test_times_wrong_order(db_session):
+    proc1 = ProcedureModel(
+        patient_id = "ABC1234",
+        patient_name = "santa claus",
+        procedure_date = datetime(2024,1,1),
+        endoscopist_id = 1,
+        cecum_reached = True,
+        cecum_reached_time = datetime(2025,1,1,10,6),
+        procedure_end_time = datetime(2025,1,1,10,0),
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        
+    )
+    db_session.add(proc1)
+    with pytest.raises(IntegrityError) as e:
+        db_session.commit()
+    
+    assert "check_time_order" in str(e.value)
+
 def test_unique_patient_date(db_session):
     proc1 = ProcedureModel(
         patient_id = "ABC1234",
@@ -153,7 +221,8 @@ def test_unique_patient_date(db_session):
         procedure_date = datetime(2024,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
-        withdrawal_time = 10,
+        cecum_reached_time = datetime(2025,1,1,10,0),
+        procedure_end_time = datetime(2025,1,1,10,6),
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
@@ -166,7 +235,8 @@ def test_unique_patient_date(db_session):
         procedure_date = datetime(2024,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
-        withdrawal_time = 10,
+        cecum_reached_time = datetime(2025,1,1,10,0),
+        procedure_end_time = datetime(2025,1,1,10,6),
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
@@ -188,7 +258,8 @@ def test_bbps_computed_column(db_session): #does the bbps_total computed column 
         procedure_date = datetime(2024,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
-        withdrawal_time = 10,
+        cecum_reached_time = datetime(2025,1,1,10,0),
+        procedure_end_time = datetime(2025,1,1,10,6),
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
@@ -208,7 +279,8 @@ def test_bbps_null_value(db_session): #does a null value for a segment result in
         procedure_date = datetime(2024,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
-        withdrawal_time = 10,
+        cecum_reached_time = datetime(2025,1,1,10,0),
+        procedure_end_time = datetime(2025,1,1,10,6),
         bbps_right = None,
         bbps_transverse = 3,
         bbps_left = 3,
@@ -230,7 +302,8 @@ def test_bbps_insert_update_total(db_session): #does the null bbps_total value u
         procedure_date = datetime(2024,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
-        withdrawal_time = 10,
+        cecum_reached_time = datetime(2025,1,1,10,0),
+        procedure_end_time = datetime(2025,1,1,10,6),
         bbps_right = None,
         bbps_transverse = 3,
         bbps_left = 3,
@@ -254,7 +327,8 @@ def test_bbps_invalid_value(db_session):
         procedure_date = datetime(2024,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
-        withdrawal_time = 10,
+        cecum_reached_time = datetime(2025,1,1,10,0),
+        procedure_end_time = datetime(2025,1,1,10,6),
         bbps_right = 9, #invalid value - test check constraint
         bbps_transverse = 3,
         bbps_left = 3,
@@ -267,6 +341,8 @@ def test_bbps_invalid_value(db_session):
 def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the database in correct format?
     raw = {
         'cecum_reached': True,
+        'cecum_reached_time': datetime(2025,1,1,10,0),
+        'procedure_end_time': datetime(2025,1,1,10,6),
         'bbps_right' : 3,
         'bbps_transverse' : 3,
         'bbps_left' : 3,
@@ -287,11 +363,12 @@ def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the 
         'patient_name': 'bob thebuilder',
         'patient_NHI': 'ABC1234',
         'endoscopist_id': 1,
+        'patient_dob': date(1960,1,1),
         'procedure_date': datetime(2025,1,1)
     }
     
-    metadata = ProcedureMetadata(**raw_metadata)
-    report = ColonoscopyReport(**raw)
+    metadata = ProcedureMetadataFinal(**raw_metadata)
+    report = ColonoscopyReportFinal(**raw)
     procedure = map_procedure(report, metadata)
     for polyp in report.polyps:
         procedure.polyps.append(map_polyp(polyp))
@@ -307,6 +384,8 @@ def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the 
 def test_full_pipeline_with_api_endpoint(db_session, client_db): #does raw JSON (from the LLM) end up in the database in correct format and can we retrieve it with the api endpoint
     raw = {
         'cecum_reached': True,
+        'cecum_reached_time': datetime(2025,1,1,10,0),
+        'procedure_end_time': datetime(2025,1,1,10,6),
         'bbps_right' : 3,
         'bbps_transverse' : 3,
         'bbps_left' : 3,
@@ -327,11 +406,12 @@ def test_full_pipeline_with_api_endpoint(db_session, client_db): #does raw JSON 
         'patient_name': 'bob thebuilder',
         'patient_NHI': 'ABC1234',
         'endoscopist_id': 1,
+        'patient_dob': date(1940,1,1),
         'procedure_date': datetime(2025,1,1)
     }
     #validate the data
-    metadata = ProcedureMetadata(**raw_metadata)
-    report = ColonoscopyReport(**raw)
+    metadata = ProcedureMetadataFinal(**raw_metadata)
+    report = ColonoscopyReportFinal(**raw)
 
     #persist in the database
     procedure = map_procedure(report, metadata)

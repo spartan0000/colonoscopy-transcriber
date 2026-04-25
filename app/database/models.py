@@ -78,6 +78,19 @@ class ProcedureModel(Base):
         CheckConstraint("bbps_right BETWEEN 0 AND 3 OR bbps_right IS NULL", name="check_bbps_right"),
         CheckConstraint("bbps_transverse BETWEEN 0 AND 3 OR bbps_transverse IS NULL", name="check_bbps_transverse"),
         CheckConstraint("bbps_left BETWEEN 0 AND 3 OR bbps_left IS NULL", name="check_bbps_left"),
+        CheckConstraint("cecum_reached_time IS NULL OR procedure_end_time >= cecum_reached_time", name="check_time_order"),
+        CheckConstraint(
+            """
+            (
+                cecum_reached = false AND cecum_reached_time IS NULL
+            )
+            OR
+            (
+                cecum_reached = true AND cecum_reached_time IS NOT NULL
+            )    
+            """, 
+            name = "check_cecum_consistency"
+        ),
         Index("idx_proc_patient_date", "patient_id", "procedure_date")
         )
     
@@ -88,9 +101,21 @@ class ProcedureModel(Base):
     endoscopist_id: Mapped[int] = mapped_column(Integer, ForeignKey("endoscopist_lookup.endoscopist_id"), nullable=False)
     
     procedure_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    indication: Mapped[str] = mapped_column(String(100), nullable = True)
     cecum_reached: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    withdrawal_time: Mapped[float] = mapped_column(Float, CheckConstraint("withdrawal_time >=0"), nullable = False)
+    cecum_reached_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    procedure_end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    withdrawal_time: Mapped[float] = mapped_column(Float, Computed(
+        """
+        CASE
+            WHEN cecum_reached_time is NULL THEN NULL
+            ELSE EXTRACT(EPOCH FROM (procedure_end_time - cecum_reached_time))/60
+        END
+        """
+    ), nullable=True)
 
+    # The bbps scores are nullable for now.  need to consider when the procedure isn't completed and what to do then.  
+    # cannot make them nullable=False since an incomplete procedure won't have all three values
     bbps_right: Mapped[int] = mapped_column(Integer, nullable=True)
     bbps_transverse: Mapped[int] = mapped_column(Integer, nullable=True)
     bbps_left: Mapped[int] = mapped_column(Integer, nullable=True)
