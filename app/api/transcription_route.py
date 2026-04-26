@@ -19,10 +19,37 @@ async def transcribe(file: UploadFile = File(...), db: Session=Depends(get_db)):
     """
     handle transcription of uploaded audio file, extract relevant information, return structured JSON output
     """
-    draft_id = get_draft_id()
+    ###Logging the input to the endpoint
+    contents = await file.read()
+    print("\n----UPLOAD DEBUG---")
+    print(f"FILENAME: {file.filename}")
+    print(f"CONTENT TYPE: {file.content_type}")
+    print(f"SIZE: {len(contents)}")
+    print("--------------\n")
+
+    file.file.seek(0)
+    ###
+
+    #draft_id = get_draft_id()
 
     transcription_result = await functions.transcribe_get_timestamps(file)
+    
+
+    ###Logging what comes back from the transcribe LLM
+    print("\n---TRANSCRIPTION OUTPUT---")
+    print(f"TRANSCRIPT: {transcription_result}")
+    ###
+
     extracted_data = await functions.extract_json(transcription_result)
+
+
+    #Logging what comes back from the chat LLM
+    print("\n---LLM OUTPUT---")
+    print(f"LLM OUTPUT: {extracted_data}")
+
+
+
+
 
     full_report = functions.generate_fake_data(extracted_data) #fake data for now, replace with real metadata extraction
 
