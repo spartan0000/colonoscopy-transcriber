@@ -3,6 +3,8 @@ from io import BytesIO
 from datetime import date, datetime
 from typing import List
 
+from pathlib import Path
+
 from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal, PolypFinal, FindingFinal
 
 
@@ -36,6 +38,11 @@ def generate_colonoscopy_report_pdf(data: ColonoscopyReportWithMetadataFinal) ->
     pdf = FPDF()
     pdf.add_page()
     
+
+    # Add logo to top left corner
+    #pdf.image(logo_path, x=10, y=10, w=30)
+
+
     # Set up fonts
     pdf.set_font("Helvetica", size=11)
     line_height = 6

@@ -113,13 +113,15 @@ async def extract_json(user_input: dict) -> dict:
     )
 
 
+    if response.output_parsed is None:
+        print(f"LLM failed to return structured output: {response}")
+    
     try:
-        response.output_parsed.model_dump()
+        return response.output_parsed.model_dump()
     except Exception as e:
         print(f"Error parsing response; {e}, raw response: {response}")
 
-    output = response.output_parsed.model_dump()
-    return output
+    
 
 ###function to generate fake metadata for testing purposes. Eventually, will need to source the metadata from primary data source.  
 

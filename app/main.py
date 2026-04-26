@@ -14,13 +14,20 @@ from datetime import datetime
 
 from fastapi import FastAPI, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from pathlib import Path
 
 from dotenv import load_dotenv
 import os
 
+from app.config import OUTPUT_DIR
 
 app = FastAPI()
 
+
+
+app.mount("/files", StaticFiles(directory=OUTPUT_DIR), name="files")
 
 app.add_middleware(
     CORSMiddleware,
