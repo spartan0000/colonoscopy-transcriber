@@ -1,11 +1,15 @@
 import pytest 
 
+
+
 from datetime import datetime
 from unittest.mock import AsyncMock, patch
 
 from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding
 
 from app.services import functions
+
+
 
 def test_finding():
     finding = Finding(
@@ -76,4 +80,42 @@ async def test_extract_json(mock_parse):
 
     result = await functions.extract_json(input_data)
 
-    assert isinstance(result, dict)
+    output = result.model_dump()
+
+    assert isinstance(output, dict)
+
+@pytest.mark.asyncio
+async def test_extract_json_2():
+    mock_parse = AsyncMock()
+    mock_parse.output_parsed = ColonoscopyReport(
+        bbps_right = None,
+        bbps_transverse = None,
+        bbps_left = None,
+        polyps = [],
+        findings = []
+    )
+
+    with patch('app.services.functions.chat_client.responses.parse', return_value=mock_parse):
+        result = await functions.extract_json({'entire_text': 'x', 'segments': []})
+    
+    assert result.bbps_right is None
+
+@pytest.mark.asyncio
+async def test_extract_json_llm_refusal():
+    mock_response = AsyncMock()
+    mock_response.output_parsed = None
+    mock_response.output_text = "I'm sorry, I cannot assist with that request."
+    with patch('app.services.functions.chat_client.responses.parse', return_value=mock_response):
+        result = await functions.extract_json({'entire_text': 'x', 'segments':[]})
+
+    
+    assert result == functions._empty_report
+
+# _empty_report in functions.py is the default return which is ColonoscopyReport with empty fields
+
+
+@pytest.mark.asyncio
+async def test_extract_json_exception():
+    with patch('app.services.functions.chat_client.responses.parse', side_effect = Exception("API fail")):
+        result = await functions.extract_json({'entire_text': 'x', 'segments':[]})
+    assert result == functions._empty_report

@@ -210,21 +210,21 @@ def test_full_report_valid():
             'findings' : []
         }
     }
+#since cecum_reached is no longer extracted by LLM, this test not needed
+# @pytest.mark.parametrize("value, expected", [
+#     ("true", True),
+#     ("false", False),
+#     ("True",True),
+#     ("False", False),
+#     ("yes", True),
+#     ("no", False), 
+# ])
+# def test_boolean_coercion(value, expected):
+#     r = ColonoscopyReport(
+#         cecum_reached = value
+#     )
 
-@pytest.mark.parametrize("value, expected", [
-    ("true", True),
-    ("false", False),
-    ("True",True),
-    ("False", False),
-    ("yes", True),
-    ("no", False), 
-])
-def test_boolean_coercion(value, expected):
-    r = ColonoscopyReport(
-        cecum_reached = value
-    )
-
-    assert r.cecum_reached == expected
+#     assert r.cecum_reached == expected
 
 #test that size_mm can be passed as a string and is coerced to a float by pydantic
 def test_polyp_size_as_string():
@@ -281,6 +281,8 @@ def test_partial_llm_output():
     },
     'report': {
         'cecum_reached': True,
+        'cecum_reached_time': datetime.now(),
+        'procedure_end_time': datetime.now() + timedelta(minutes=5),
         'polyps': [
             {'polyp_id': 1,
              

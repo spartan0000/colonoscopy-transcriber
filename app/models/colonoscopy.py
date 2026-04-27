@@ -19,9 +19,20 @@ class Finding(BaseModel):
     location: Optional[Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"]] = Field(default = None, description = "location of the finding if applicable")
     biopsy_taken: Optional[bool] = Field(default = None, description = "whether a biopsy was taken for this finding")
 
-class ColonoscopyReport(BaseModel):
+class ColonoscopyReport(BaseModel): #from the LLM
     
-    cecum_reached: Optional[bool] = Field(default=None, description="whether the cecum was reached or not")
+        
+    bbps_right: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the right colon")
+    bbps_transverse: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the transverse colon")
+    bbps_left: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the left colon")
+    
+    #need to add other findings such as diveritcula, hemorrhoids, inflammation.
+    polyps: List[Polyp] = Field(default_factory = list)
+    findings: List[Finding] = Field(default_factory = list)
+
+
+class ColonoscopyReportWithTime(BaseModel): #add time stamps to what the LLM returned
+    cecum_reached: bool = Field(..., description="whether the cecum was reached or not")
     @field_validator("cecum_reached", mode = "before")
     def validate_cecum_reached(cls, value):
         if value is None:
@@ -37,14 +48,13 @@ class ColonoscopyReport(BaseModel):
         return None
 
 
-    cecum_reached_time: Optional[datetime] = Field(default = None, description="timestamp when the cecum was reached")
-    procedure_end_time: Optional[datetime] = Field(default = None, description="timestamp when the procedure ended")
-    withdrawal_time: Optional[float] = Field(default = None, description="calculated withdrawal time given cecum reached time and procedure end time")
+    cecum_reached_time: datetime = Field(..., description="timestamp when the cecum was reached")
+    procedure_end_time: datetime = Field(..., description="timestamp when the procedure ended")
     bbps_right: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the right colon")
     bbps_transverse: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the transverse colon")
     bbps_left: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the left colon")
     
-    #need to add other findings such as diveritcula, hemorrhoids, inflammation.
+    
     polyps: List[Polyp] = Field(default_factory = list)
     findings: List[Finding] = Field(default_factory = list)
 
@@ -52,6 +62,7 @@ class ColonoscopyReport(BaseModel):
 class ProcedureMetadata(BaseModel):
     patient_name: Optional[str] = Field(default = None, description = "name of patient")
     patient_NHI: Optional[str] = Field(default = None, description = "NHI number of patient")
+    patient_dob: Optional[datetime] = Field(default = None, description = "patient date of birth")
     procedure_date: Optional[date] = Field(default = None, description="date of procedure") 
     endoscopist_id: Optional[int] = Field(default = None, description = "endoscopist_id performing the procedure")
 
@@ -114,7 +125,7 @@ class ProcedureMetadataFinal(BaseModel):
 class ColonoscopyReportWithMetadata(BaseModel):
     
     metadata: ProcedureMetadata
-    report: ColonoscopyReport
+    report: ColonoscopyReportWithTime
 
 class ColonoscopyReportWithMetadataFinal(BaseModel):
 

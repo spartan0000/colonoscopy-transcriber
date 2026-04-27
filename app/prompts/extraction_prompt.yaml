@@ -13,7 +13,7 @@ prompt:
       - Do not merge multiple polyps into one entry.
       - The output must adhere strictly to the provided pydantic schema
       - Extract all polyps to the end of the transcription.
-      
+      - Do not infer or calculate any time stamps.  Do not provide data for cecum reached or procedure end times.
       
       - Pay particular attention to the sign out at the end of the procedure which contains a summary of polyps removed and any other findings.
       - Return only valid JSON
