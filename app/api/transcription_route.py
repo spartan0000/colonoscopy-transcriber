@@ -18,6 +18,9 @@ def get_draft_id():
 
 router = APIRouter(tags=['transcription'])
 
+
+#need to remove all the logging in the function below at some point
+
 @router.post("/transcribe")
 async def transcribe(cecum_reached_time: datetime | None = Form(None), procedure_end_time: datetime | None = Form(None), file: UploadFile = File(...)):
     """
@@ -48,7 +51,7 @@ async def transcribe(cecum_reached_time: datetime | None = Form(None), procedure
     print(f"TRANSCRIPT: {transcription_result}")
     ###
 
-    extracted_data = await functions.extract_json(transcription_result)
+    extracted_data, status = await functions.extract_json(transcription_result)
 
     #Logging what comes back from the chat LLM
     print("\n---LLM OUTPUT---")
@@ -64,5 +67,8 @@ async def transcribe(cecum_reached_time: datetime | None = Form(None), procedure
 
 
 
-    return full_report
+    return {
+        'report': full_report,
+        'status': status
+    }
 
