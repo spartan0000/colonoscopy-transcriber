@@ -78,7 +78,7 @@ async def test_extract_json(mock_parse):
         'segments': [{'start': 0.0, 'end': 1.0, 'text': 'segment1'}]
     }
 
-    result = await functions.extract_json(input_data)
+    result, status = await functions.extract_json(input_data)
 
     output = result.model_dump()
 
@@ -96,7 +96,7 @@ async def test_extract_json_2():
     )
 
     with patch('app.services.functions.chat_client.responses.parse', return_value=mock_parse):
-        result = await functions.extract_json({'entire_text': 'x', 'segments': []})
+        result, status = await functions.extract_json({'entire_text': 'x', 'segments': []})
     
     assert result.bbps_right is None
 
@@ -106,10 +106,10 @@ async def test_extract_json_llm_refusal():
     mock_response.output_parsed = None
     mock_response.output_text = "I'm sorry, I cannot assist with that request."
     with patch('app.services.functions.chat_client.responses.parse', return_value=mock_response):
-        result = await functions.extract_json({'entire_text': 'x', 'segments':[]})
+        result, status = await functions.extract_json({'entire_text': 'x', 'segments':[]})
 
     
-    assert result == functions._empty_report
+    assert result == functions._empty_report()
 
 # _empty_report in functions.py is the default return which is ColonoscopyReport with empty fields
 
@@ -117,5 +117,5 @@ async def test_extract_json_llm_refusal():
 @pytest.mark.asyncio
 async def test_extract_json_exception():
     with patch('app.services.functions.chat_client.responses.parse', side_effect = Exception("API fail")):
-        result = await functions.extract_json({'entire_text': 'x', 'segments':[]})
-    assert result == functions._empty_report
+        result, status = await functions.extract_json({'entire_text': 'x', 'segments':[]})
+    assert result == functions._empty_report()

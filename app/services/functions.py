@@ -122,20 +122,20 @@ async def extract_json(user_input: dict) -> dict:
             ],
             text_format = ColonoscopyReport,
         )
-
+    
 
         if type(response.output_parsed) is str or response.output_parsed is None:
             print("LLM failed to return structured output")
             print("RAW:", response.output_text)
 
-            return _empty_report
+            return _empty_report(), "failed"
     
     
-        return response.output_parsed
+        return response.output_parsed, "success"
     
     except Exception as e:
         print(f"LLM refusal or parse error: {e}")
-        return _empty_report
+        return _empty_report(), "failed"
 
 def add_time_stamps(llm: ColonoscopyReport, cecum_reached_time, procedure_end_time) -> ColonoscopyReportWithTime:
     
