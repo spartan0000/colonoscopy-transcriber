@@ -1,14 +1,62 @@
-from fpdf import FPDF
+from fpdf import FPDF, XPos, YPos
 from io import BytesIO
-from datetime import date, datetime
-from typing import List
-
-from pathlib import Path
-
-from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal, PolypFinal, FindingFinal
-
-
-
+from datetime import date
+from typing import Optional, List, Literal
+from pydantic import BaseModel, Field
+ 
+ 
+# Import these from your models module
+class PolypFinal(BaseModel):
+    polyp_id: int = Field(..., description="unique identifier for the polyp in order of appearance")
+    size_mm: float = Field(..., ge=0, description="size of the polyp in millimeters")
+    location: Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", 
+                      "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"]
+    morphology: Literal["sessile", "pedunculated", "semi_pedunculated", "flat", "other"] = Field(
+        default=None, description="morphological classification of the polyp"
+    )
+    resection_method: Literal["snare", "cold_snare", "hot_snare", "biopsy_forceps", "lift_and_resect", "other"] = Field(
+        default=None, description="method used to resect the polyp"
+    )
+    resection_complete: Optional[bool] = Field(default=None, description="whether the polyp resection was complete")
+    retrieved: Optional[bool] = Field(default=None, description="whether the polyp was retrieved")
+ 
+ 
+class FindingFinal(BaseModel):
+    finding_id: int = Field(..., description="unique identifier for the finding in order of appearance")
+    description: Optional[str] = Field(default=None, description="description of the finding")
+    location: Optional[Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", 
+                               "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"]] = Field(
+        default=None, description="location of the finding if applicable"
+    )
+    biopsy_taken: Optional[bool] = Field(default=None, description="whether a biopsy was taken for this finding")
+ 
+ 
+class ColonoscopyReportFinal(BaseModel):
+    cecum_reached: bool = Field(..., description="whether the cecum was reached or not")
+    cecum_reached_time: str = Field(..., description="timestamp when the cecum was reached")
+    procedure_end_time: str = Field(..., description="timestamp when the procedure ended")
+    withdrawal_time: float = Field(..., description="calculated withdrawal time in minutes")
+    bbps_right: int = Field(..., ge=0, le=3, description="boston bowel prep score for the right colon")
+    bbps_transverse: int = Field(..., ge=0, le=3, description="boston bowel prep score for the transverse colon")
+    bbps_left: int = Field(..., ge=0, le=3, description="boston bowel prep score for the left colon")
+    polyps: List[PolypFinal] = Field(default_factory=list)
+    findings: List[FindingFinal] = Field(default_factory=list)
+ 
+ 
+class ProcedureMetadataFinal(BaseModel):
+    patient_name: str = Field(..., description="name of patient")
+    patient_NHI: str = Field(..., description="NHI number of patient")
+    patient_dob: date
+    procedure_date: date 
+    indication: str = Field(..., description="text input for the indication for the procedure")
+    endoscopist_id: int = Field(..., description="endoscopist_id performing the procedure")
+ 
+ 
+class ColonoscopyReportWithMetadataFinal(BaseModel):
+    metadata: ProcedureMetadataFinal
+    report: ColonoscopyReportFinal
+ 
+ 
 def _calculate_age(dob: date, procedure_date: date) -> str:
     """Calculate patient age from DOB and procedure date in YyMm format."""
     years = procedure_date.year - dob.year
@@ -38,11 +86,6 @@ def generate_colonoscopy_report_pdf(data: ColonoscopyReportWithMetadataFinal) ->
     pdf = FPDF()
     pdf.add_page()
     
-
-    # Add logo to top left corner
-    #pdf.image(logo_path, x=10, y=10, w=30)
-
-
     # Set up fonts
     pdf.set_font("Helvetica", size=11)
     line_height = 6
@@ -72,11 +115,11 @@ def _add_patient_header(pdf: FPDF, metadata: ProcedureMetadataFinal, patient_age
     """Add patient identifying information at top of report."""
     pdf.set_font("Helvetica", size=11)
     
-    pdf.cell(0, line_height, f"Date: {metadata.procedure_date.strftime('%d/%m/%Y')}", ln=True)
-    pdf.cell(0, line_height, f"Name: {metadata.patient_name}", ln=True)
-    pdf.cell(0, line_height, f"NHI: {metadata.patient_NHI}", ln=True)
-    pdf.cell(0, line_height, f"Age: {patient_age}", ln=True)
-    pdf.cell(0, line_height, f"Indications: {metadata.indication}", ln=True)
+    pdf.cell(0, line_height, f"Date: {metadata.procedure_date.strftime('%d/%m/%Y')}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(0, line_height, f"Name: {metadata.patient_name}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(0, line_height, f"NHI: {metadata.patient_NHI}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(0, line_height, f"Age: {patient_age}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(0, line_height, f"Indications: {metadata.indication}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     pdf.ln(section_spacing)
  
@@ -84,7 +127,7 @@ def _add_patient_header(pdf: FPDF, metadata: ProcedureMetadataFinal, patient_age
 def _add_procedure_section(pdf: FPDF, report: ColonoscopyReportFinal, line_height: float, section_spacing: float) -> None:
     """Add procedure details including BBPS scores."""
     pdf.set_font("Helvetica", "B", size=11)
-    pdf.cell(0, line_height, "Procedure:", ln=True)
+    pdf.cell(0, line_height, "Procedure:", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     pdf.set_font("Helvetica", size=10)
     pdf.ln(section_spacing - 2)
@@ -105,7 +148,7 @@ def _add_procedure_section(pdf: FPDF, report: ColonoscopyReportFinal, line_heigh
 def _add_findings_section(pdf: FPDF, report: ColonoscopyReportFinal, line_height: float, section_spacing: float) -> None:
     """Add findings section, including general findings and polyps."""
     pdf.set_font("Helvetica", "B", size=11)
-    pdf.cell(0, line_height, "Findings:", ln=True)
+    pdf.cell(0, line_height, "Findings:", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.ln(section_spacing - 2)
     
     # General findings (non-polyp)
@@ -141,7 +184,7 @@ def _add_polyp_findings(pdf: FPDF, polyps: List[PolypFinal], line_height: float,
 def _add_summary_section(pdf: FPDF, report: ColonoscopyReportFinal, line_height: float, section_spacing: float) -> None:
     """Add summary section at end of report."""
     pdf.set_font("Helvetica", "B", size=11)
-    pdf.cell(0, line_height, "Summary:", ln=True)
+    pdf.cell(0, line_height, "Summary:", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.ln(section_spacing - 2)
     
     pdf.set_font("Helvetica", size=10)
@@ -158,7 +201,7 @@ def _add_summary_section(pdf: FPDF, report: ColonoscopyReportFinal, line_height:
             _add_wrapped_text(pdf, f"- {summary_text}", line_height)
             pdf.ln(section_spacing - 2)
     else:
-        pdf.cell(0, line_height, "- No polyps identified", ln=True)
+        pdf.cell(0, line_height, "- No polyps identified", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     if report.findings:
         for finding in report.findings:

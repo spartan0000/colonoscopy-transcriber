@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Depends
+from fastapi import APIRouter, UploadFile, File, Depends, Form
 from app.database.connection import get_db
 
 from app.services import functions
@@ -9,16 +9,24 @@ from sqlalchemy.orm import Session
 
 import uuid
 
+from dateutil.parser import isoparse
+
+from datetime import datetime
+
 def get_draft_id():
     return str(uuid.uuid4())
 
 router = APIRouter(tags=['transcription'])
 
 @router.post("/transcribe")
-async def transcribe(file: UploadFile = File(...), db: Session=Depends(get_db)):
+async def transcribe(cecum_reached_time: datetime | None = Form(None), procedure_end_time: datetime | None = Form(None), file: UploadFile = File(...)):
     """
     handle transcription of uploaded audio file, extract relevant information, return structured JSON output
     """
+    print("CECUM_DEBUG:  ", cecum_reached_time)
+    print("PROCEDURE END TIME DEBUG:  ", procedure_end_time)
+    
+
     ###Logging the input to the endpoint
     contents = await file.read()
     print("\n----UPLOAD DEBUG---")
@@ -42,16 +50,15 @@ async def transcribe(file: UploadFile = File(...), db: Session=Depends(get_db)):
 
     extracted_data = await functions.extract_json(transcription_result)
 
-
     #Logging what comes back from the chat LLM
     print("\n---LLM OUTPUT---")
     print(f"LLM OUTPUT: {extracted_data}")
 
 
+    extracted_data_with_timestamps = functions.add_time_stamps(extracted_data, cecum_reached_time, procedure_end_time)
 
 
-
-    full_report = functions.generate_fake_data(extracted_data) #fake data for now, replace with real metadata extraction
+    full_report = functions.generate_fake_data(extracted_data_with_timestamps) #fake data for now, replace with real metadata extraction
 
     #functions.write_transcription_record(db=db, full_report = full_report) #move this function to the write_db_generate_pdf route
 

@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 load_dotenv()
 
 from app.services.clients import chat_client, hnz_client, transcribe_client, whisper_client
-from app.models.colonoscopy import ColonoscopyReport, ProcedureMetadata, ColonoscopyReportWithMetadata
+from app.models.colonoscopy import ColonoscopyReport, ProcedureMetadata, ColonoscopyReportWithTime, ColonoscopyReportWithMetadata
 from app.models.colonoscopy import ColonoscopyReportFinal, ProcedureMetadataFinal, ColonoscopyReportWithMetadataFinal
 from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup
 
@@ -92,6 +92,16 @@ async def transcribe_get_timestamps(upload_file: UploadFile) -> dict:
     }
     return clean_data
 
+
+def _empty_report() -> ColonoscopyReport:
+    return ColonoscopyReport(
+                bbps_right = None,
+                bbps_transverse = None,
+                bbps_left = None,
+                polyps = [],
+                findings = []
+            ) 
+
 #cleaned data (dictionary) then goes into this function to extract polyp data and other endoscopy data in structured format
 async def extract_json(user_input: dict) -> dict:
     prompt = load_prompt('extraction_prompt.yaml')
@@ -103,29 +113,48 @@ async def extract_json(user_input: dict) -> dict:
     segments: {json.dumps(user_input['segments'], indent = 2)}
     """
 
-    response = await chat_client.responses.parse(
-        model = "gpt-5-mini",
-        input = [
-            {'role': 'system', 'content': prompt},
-            {'role': 'user', 'content': transcript_text}
-        ],
-        text_format = ColonoscopyReport,
+    try:
+        response = await chat_client.responses.parse(
+            model = "gpt-5-mini",
+            input = [
+                {'role': 'system', 'content': prompt},
+                {'role': 'user', 'content': transcript_text}
+            ],
+            text_format = ColonoscopyReport,
+        )
+
+
+        if type(response.output_parsed) is str or response.output_parsed is None:
+            print("LLM failed to return structured output")
+            print("RAW:", response.output_text)
+
+            return _empty_report
+    
+    
+        return response.output_parsed
+    
+    except Exception as e:
+        print(f"LLM refusal or parse error: {e}")
+        return _empty_report
+
+def add_time_stamps(llm: ColonoscopyReport, cecum_reached_time, procedure_end_time) -> ColonoscopyReportWithTime:
+    
+    return ColonoscopyReportWithTime(
+        cecum_reached = cecum_reached_time is not None,
+        cecum_reached_time = cecum_reached_time,
+        procedure_end_time = procedure_end_time,
+        bbps_right = llm.bbps_right,
+        bbps_left = llm.bbps_left,
+        bbps_transverse = llm.bbps_transverse,
+        polyps = llm.polyps,
+        findings = llm.findings,
     )
 
 
-    if response.output_parsed is None:
-        print(f"LLM failed to return structured output: {response}")
-    
-    try:
-        return response.output_parsed.model_dump()
-    except Exception as e:
-        print(f"Error parsing response; {e}, raw response: {response}")
-
-    
 
 ###function to generate fake metadata for testing purposes. Eventually, will need to source the metadata from primary data source.  
 
-def generate_fake_data(transcribed_report: ColonoscopyReport):
+def generate_fake_data(transcribed_report):
     names = ['Bob Marley', 'Ben Franklin', 'Stevie Nicks', 'Santa Claus']
     nhis = ['ABC1234', 'ABC7890', 'XYZ4343', 'LLL1111']
     dobs = [
