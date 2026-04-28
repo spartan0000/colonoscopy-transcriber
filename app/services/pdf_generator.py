@@ -161,20 +161,22 @@ def _add_summary_section(pdf: FPDF, report: ColonoscopyReportFinal, line_height:
  
 def _format_finding(finding: FindingFinal) -> str:
     """Format a non-polyp finding as readable text."""
-    parts = []
+    text = ""
     
     if finding.description:
-        parts.append(finding.description)
-    
-    if finding.location:
-        location_formatted = finding.location.replace("_", " ").title()
-        parts.append(f"Location: {location_formatted}")
+        text = f"{finding.description} was found"
+        
+        if finding.location:
+            location_formatted = finding.location.replace("_", " ").lower()
+            text += f" in the {location_formatted}"
+        
+        text += ". "
     
     if finding.biopsy_taken is not None:
-        biopsy_text = "Biopsy taken" if finding.biopsy_taken else "No biopsy"
-        parts.append(biopsy_text)
+        biopsy_text = "Biopsy was taken" if finding.biopsy_taken else "Biopsy was not taken"
+        text += biopsy_text + "."
     
-    return ". ".join(parts) + "." if parts else ""
+    return text.strip()
  
  
 def _format_polyp_group(location: str, polyps: List[PolypFinal]) -> str:
@@ -240,3 +242,4 @@ def _format_polyp_summary(location: str, polyps: List[PolypFinal]) -> str:
 def _add_wrapped_text(pdf: FPDF, text: str, line_height: float) -> None:
     """Add text with word wrapping."""
     pdf.multi_cell(0, line_height, text)
+ 

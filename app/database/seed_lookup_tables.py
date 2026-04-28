@@ -1,5 +1,5 @@
 from app.database.models import PolypLocationLookup, EndoscopistLookup
-from app.database.connection import TestSessionLocal
+from app.database.connection import TestSessionLocal, SessionLocal
 
 
 
@@ -52,6 +52,6 @@ def seed_endoscopists(db):
     db.commit()
 
 if __name__ == "__main__":
-    db = TestSessionLocal()
+    db = SessionLocal()
     seed_polyp_locations(db)
     seed_endoscopists(db)

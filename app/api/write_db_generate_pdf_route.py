@@ -12,6 +12,8 @@ from pathlib import Path
 
 #logo_path = Path(__file__).parent / "data" / "HNZ_logo.jpg"
 
+from app.logger import logger
+
 from app.config import OUTPUT_DIR, API_BASE
 
 router = APIRouter(tags=['write_db_pdf'])
@@ -19,13 +21,16 @@ router = APIRouter(tags=['write_db_pdf'])
 @router.post("/write")
 def write_db_pdf(full_report: ColonoscopyReportWithMetadataFinal, db: Session = Depends(get_db)):
 
-    print("LOGGING TO DB: ", full_report.model_dump())
+    logger.info(f"Logging to DB: {full_report.model_dump()}")
     #write to the database here once the data returns from the user
     try:
         procedure = functions.write_transcription_record(db=db, full_report = full_report)
 
         print("LOGGING TO DB COMPLETE")
+        print(f"PROCEDURE_ID: {procedure.procedure_id}")
 
+        logger.info(f"Logging to db complete")
+        logger.info(f"Procedure ID: {procedure.procedure_id}")
         
     except Exception as e:
         print("DB WRITE FAILED", e)
@@ -33,6 +38,8 @@ def write_db_pdf(full_report: ColonoscopyReportWithMetadataFinal, db: Session = 
             status_code=500,
             detail="Failed to write to database"
         )
+    
+        logger.error("DB write failed", exc_info=True)
    
 
 
@@ -44,9 +51,13 @@ def write_db_pdf(full_report: ColonoscopyReportWithMetadataFinal, db: Session = 
 
         with open(filepath, 'wb') as f:
             f.write(pdf_bytes.getvalue())
+
+
         print(f'Writing PDF to : {filepath}')
         print(f'File exists after write: {filepath.exists()}')
 
+        logger.info(f"PDF generated, written to: {filepath}")
+        
         pdf_result = {
             'pdf_url': f'/files/{filename}'
         }
@@ -62,6 +73,7 @@ def write_db_pdf(full_report: ColonoscopyReportWithMetadataFinal, db: Session = 
         pdf_result = {
             'pdf_url': None
         }
+        logger.error("Failed to generate PDF", exc_info=True)
     
     return {
         'procedure_id': procedure.procedure_id,
