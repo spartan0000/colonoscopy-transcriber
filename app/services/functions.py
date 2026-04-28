@@ -236,7 +236,7 @@ def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMe
         db.add(procedure)
         
     db.refresh(procedure)
-
+    return procedure
         
 
 async def final_transcription(upload_file: UploadFile, db: Session):
