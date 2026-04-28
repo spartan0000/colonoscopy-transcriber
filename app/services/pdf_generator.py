@@ -3,59 +3,8 @@ from io import BytesIO
 from datetime import date
 from typing import Optional, List, Literal
 from pydantic import BaseModel, Field
- 
- 
-# Import these from your models module
-class PolypFinal(BaseModel):
-    polyp_id: int = Field(..., description="unique identifier for the polyp in order of appearance")
-    size_mm: float = Field(..., ge=0, description="size of the polyp in millimeters")
-    location: Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", 
-                      "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"]
-    morphology: Literal["sessile", "pedunculated", "semi_pedunculated", "flat", "other"] = Field(
-        default=None, description="morphological classification of the polyp"
-    )
-    resection_method: Literal["snare", "cold_snare", "hot_snare", "biopsy_forceps", "lift_and_resect", "other"] = Field(
-        default=None, description="method used to resect the polyp"
-    )
-    resection_complete: Optional[bool] = Field(default=None, description="whether the polyp resection was complete")
-    retrieved: Optional[bool] = Field(default=None, description="whether the polyp was retrieved")
- 
- 
-class FindingFinal(BaseModel):
-    finding_id: int = Field(..., description="unique identifier for the finding in order of appearance")
-    description: Optional[str] = Field(default=None, description="description of the finding")
-    location: Optional[Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", 
-                               "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"]] = Field(
-        default=None, description="location of the finding if applicable"
-    )
-    biopsy_taken: Optional[bool] = Field(default=None, description="whether a biopsy was taken for this finding")
- 
- 
-class ColonoscopyReportFinal(BaseModel):
-    cecum_reached: bool = Field(..., description="whether the cecum was reached or not")
-    cecum_reached_time: str = Field(..., description="timestamp when the cecum was reached")
-    procedure_end_time: str = Field(..., description="timestamp when the procedure ended")
-    withdrawal_time: float = Field(..., description="calculated withdrawal time in minutes")
-    bbps_right: int = Field(..., ge=0, le=3, description="boston bowel prep score for the right colon")
-    bbps_transverse: int = Field(..., ge=0, le=3, description="boston bowel prep score for the transverse colon")
-    bbps_left: int = Field(..., ge=0, le=3, description="boston bowel prep score for the left colon")
-    polyps: List[PolypFinal] = Field(default_factory=list)
-    findings: List[FindingFinal] = Field(default_factory=list)
- 
- 
-class ProcedureMetadataFinal(BaseModel):
-    patient_name: str = Field(..., description="name of patient")
-    patient_NHI: str = Field(..., description="NHI number of patient")
-    patient_dob: date
-    procedure_date: date 
-    indication: str = Field(..., description="text input for the indication for the procedure")
-    endoscopist_id: int = Field(..., description="endoscopist_id performing the procedure")
- 
- 
-class ColonoscopyReportWithMetadataFinal(BaseModel):
-    metadata: ProcedureMetadataFinal
-    report: ColonoscopyReportFinal
- 
+
+from app.models.colonoscopy import PolypFinal, FindingFinal, ColonoscopyReportFinal, ProcedureMetadataFinal, ColonoscopyReportWithMetadataFinal
  
 def _calculate_age(dob: date, procedure_date: date) -> str:
     """Calculate patient age from DOB and procedure date in YyMm format."""

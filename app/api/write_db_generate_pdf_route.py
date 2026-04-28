@@ -17,12 +17,26 @@ from app.config import OUTPUT_DIR, API_BASE
 router = APIRouter(tags=['write_db_pdf'])
 
 @router.post("/write")
-# def write_db_generate_pdf(full_report: ColonoscopyReportWithMetadataFinal, db: Session = Depends(get_db)):
-#     #write to the database here once the data returns from the user
+def write_db(full_report: ColonoscopyReportWithMetadataFinal, db: Session = Depends(get_db)):
 
-#     functions.write_transcription_record(db=db, full_report = full_report)
+    print("LOGGING TO DB: ", full_report.model_dump())
+    #write to the database here once the data returns from the user
+    try:
+        procedure = functions.write_transcription_record(db=db, full_report = full_report)
 
-#     #insert pdf generating function here
+        print("LOGGING TO DB COMPLETE")
+
+        return {
+            'status': 'success',
+            'procedure_id': procedure.procedure_id
+        }
+    except Exception as e:
+        print("DB WRITE FAILED", e)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to write to database"
+        )
+    #insert pdf generating function here
 
 async def create_colonoscopy_report(full_report: ColonoscopyReportWithMetadataFinal):
     try:
