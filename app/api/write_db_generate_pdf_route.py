@@ -17,7 +17,7 @@ from app.config import OUTPUT_DIR, API_BASE
 router = APIRouter(tags=['write_db_pdf'])
 
 @router.post("/write")
-def write_db(full_report: ColonoscopyReportWithMetadataFinal, db: Session = Depends(get_db)):
+def write_db_pdf(full_report: ColonoscopyReportWithMetadataFinal, db: Session = Depends(get_db)):
 
     print("LOGGING TO DB: ", full_report.model_dump())
     #write to the database here once the data returns from the user
@@ -26,19 +26,16 @@ def write_db(full_report: ColonoscopyReportWithMetadataFinal, db: Session = Depe
 
         print("LOGGING TO DB COMPLETE")
 
-        return {
-            'status': 'success',
-            'procedure_id': procedure.procedure_id
-        }
+        
     except Exception as e:
         print("DB WRITE FAILED", e)
         raise HTTPException(
             status_code=500,
             detail="Failed to write to database"
         )
-    #insert pdf generating function here
+   
 
-async def create_colonoscopy_report(full_report: ColonoscopyReportWithMetadataFinal):
+
     try:
         pdf_bytes = pdf_generator.generate_colonoscopy_report_pdf(full_report)
 
@@ -50,8 +47,8 @@ async def create_colonoscopy_report(full_report: ColonoscopyReportWithMetadataFi
         print(f'Writing PDF to : {filepath}')
         print(f'File exists after write: {filepath.exists()}')
 
-        return {
-            "pdf_url": f"/files/{filename}"
+        pdf_result = {
+            'pdf_url': f'/files/{filename}'
         }
 
         # return StreamingResponse(
@@ -62,3 +59,11 @@ async def create_colonoscopy_report(full_report: ColonoscopyReportWithMetadataFi
         # )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
+        pdf_result = {
+            'pdf_url': None
+        }
+    
+    return {
+        'procedure_id': procedure.procedure_id,
+        'pdf_url': pdf_result['pdf_url']
+    }
