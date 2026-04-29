@@ -16,6 +16,10 @@ from fastapi import FastAPI, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.database.connection import TestSessionLocal, SessionLocal, engine
+from app.database.seed_lookup_tables import init_db_deployment
+from contextlib import asynccontextmanager
+
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -23,9 +27,15 @@ import os
 
 from app.config import OUTPUT_DIR
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db_deployment(SessionLocal, engine)
 
+    yield
 
+    
+
+app = FastAPI(lifespan=lifespan)
 
 app.mount("/files", StaticFiles(directory=OUTPUT_DIR), name="files")
 

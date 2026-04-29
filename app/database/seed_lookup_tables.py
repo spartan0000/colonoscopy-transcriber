@@ -1,5 +1,5 @@
-from app.database.models import PolypLocationLookup, EndoscopistLookup
-from app.database.connection import TestSessionLocal, SessionLocal
+from app.database.models import PolypLocationLookup, EndoscopistLookup, Base
+from app.database.connection import TestSessionLocal, SessionLocal, engine
 
 
 
@@ -50,6 +50,25 @@ def seed_endoscopists(db):
             )
             db.add(new_doc)
     db.commit()
+
+
+def init_db_deployment(SessionLocal, engine):
+    print("Initializing database...")
+
+    Base.metadata.create_all(bind=engine)
+
+    db = SessionLocal
+
+    try:
+        seed_polyp_locations(db)
+        seed_endoscopists(db)
+
+        print("Database initialized and lookup tables seeded")
+    finally:
+        db.close()
+
+
+
 
 if __name__ == "__main__":
     db = SessionLocal()
