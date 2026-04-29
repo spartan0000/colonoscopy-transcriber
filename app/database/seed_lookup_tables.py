@@ -28,7 +28,7 @@ def seed_polyp_locations(db):
                 is_active=True
             )
             db.add(new_location)
-    db.commit() 
+    
 
 def seed_endoscopists(db):
 
@@ -49,7 +49,7 @@ def seed_endoscopists(db):
                 is_active=True
             )
             db.add(new_doc)
-    db.commit()
+    
 
 
 def init_db_deployment(SessionLocal, engine):
@@ -57,13 +57,18 @@ def init_db_deployment(SessionLocal, engine):
 
     Base.metadata.create_all(bind=engine)
 
-    db = SessionLocal
+    db = SessionLocal()
 
     try:
         seed_polyp_locations(db)
         seed_endoscopists(db)
-
+        db.commit()
         print("Database initialized and lookup tables seeded")
+
+    except Exception as e:
+        db.rollback()
+        print(f"Database initialization failed: {e}")
+        raise
     finally:
         db.close()
 
@@ -71,6 +76,4 @@ def init_db_deployment(SessionLocal, engine):
 
 
 if __name__ == "__main__":
-    db = SessionLocal()
-    seed_polyp_locations(db)
-    seed_endoscopists(db)
+    init_db_deployment(SessionLocal, engine)
