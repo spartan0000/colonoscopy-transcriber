@@ -3,12 +3,23 @@ services:
     image: postgres:16
     container_name: colonoscopy_postgres
     environment:
-      POSTGRES_USER: colonoscopy_user
-      POSTGRES_PASSWORD: colonoscopy_password
-      POSTGRES_DB: colonoscopy_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+  colonoscopy-transcription:
+    build: .
+    ports: 
+      - 8000:8000
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: ${PSQL_DATABASE_URL}
+
 volumes:
   pgdata:
+
