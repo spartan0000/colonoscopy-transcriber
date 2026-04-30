@@ -26,6 +26,9 @@ from app.models.colonoscopy import ColonoscopyReportFinal, ProcedureMetadataFina
 from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup
 
 
+from app.logger import logger
+
+
 BASE_PATH = Path(__file__).parent.parent
 PROMPT_PATH = BASE_PATH / 'prompts'
 DATA_PATH = BASE_PATH / 'data'
@@ -125,9 +128,9 @@ async def extract_json(user_input: dict) -> dict:
     
 
         if type(response.output_parsed) is str or response.output_parsed is None:
-            print("LLM failed to return structured output")
-            print("RAW:", response.output_text)
-
+            logger.info("LLM failed to return structured output")
+            logger.info("RAW:", response.output_text)
+            logger.warning("LLM extraction failed: empty output")
             return _empty_report(), "failed"
     
     
@@ -135,6 +138,7 @@ async def extract_json(user_input: dict) -> dict:
     
     except Exception as e:
         print(f"LLM refusal or parse error: {e}")
+        logger.warning(f"LLM extraction failed: LLM refusal or parse error: {e}")
         return _empty_report(), "failed"
 
 def add_time_stamps(llm: ColonoscopyReport, cecum_reached_time, procedure_end_time) -> ColonoscopyReportWithTime:

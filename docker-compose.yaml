@@ -6,6 +6,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
+      
     ports:
       - "5432:5432"
     volumes:
@@ -14,11 +15,12 @@ services:
   colonoscopy-transcription:
     build: .
     ports: 
-      - 8000:8000
+      - "8000:8000"
     depends_on:
       - postgres
-    environment:
-      DATABASE_URL: ${PSQL_DATABASE_URL}
+    env_file:
+    - .env
+    
 
 volumes:
   pgdata:

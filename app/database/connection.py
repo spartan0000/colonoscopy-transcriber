@@ -8,7 +8,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("PSQL_DATABASE_URL")
+
+print("DB_USER =", os.getenv("DB_USER"))
+print("DB_PASS =", os.getenv("DB_PASS"))
+print("DB_HOST =", os.getenv("DB_HOST"))
+print("DB_NAME =", os.getenv("DB_NAME"))
+
+for var in ["DB_USER", "DB_PASS", "DB_HOST", "DB_NAME"]:
+    if not os.getenv(var):
+        raise ValueError(f"{var} is not set")
+
+DATABASE_URL = (
+    f"postgresql+psycopg2://{os.getenv('DB_USER')}:"
+    f"{os.getenv('DB_PASS')}@"
+    f"{os.getenv('DB_HOST')}:5432/"
+    f"{os.getenv('DB_NAME')}"
+
+)
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 
 engine = create_engine(DATABASE_URL)
