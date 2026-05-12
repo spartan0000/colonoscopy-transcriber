@@ -20,10 +20,10 @@ from sqlalchemy.orm import Session
 
 load_dotenv()
 
-from app.services.clients import chat_client, hnz_client, transcribe_client, whisper_client
+from app.services.clients import chat_client, transcribe_client, whisper_client
 from app.models.colonoscopy import ColonoscopyReport, ProcedureMetadata, ColonoscopyReportWithTime, ColonoscopyReportWithMetadata
 from app.models.colonoscopy import ColonoscopyReportFinal, ProcedureMetadataFinal, ColonoscopyReportWithMetadataFinal
-from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup
+from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup, TranscriptModel
 
 
 from app.logger import logger
@@ -220,6 +220,25 @@ def map_procedure(report, metadata):
         
             
     )
+
+def map_transcription(full_report: ColonoscopyReportWithMetadataFinal):
+    return TranscriptModel(
+        patient_id = full_report.metadata.patient_NHI,
+        patient_name = full_report.metadata.patient_name,
+        procedure_date = full_report.metadata.procedure_date,
+        endoscopist_id = full_report.metadata.endoscopist_id,
+        indication = full_report.metadata.indication,
+        cecum_reached = full_report.report.cecum_reached,
+        cecum_reached_time = full_report.report.cecum_reached_time,
+        procedure_end_time = full_report.report.procedure_end_time,
+        bbps_right = full_report.report.bbps_right,
+        bbps_transverse = full_report.report.bbps_transverse,
+        bbps_left = full_report.report.bbps_left,
+        polyps = full_report.report.polyps,
+        findings = full_report.report.findings,
+        #status is set to in_progress by default.  so in the final report generation function, we just update the status to finalized.
+        
+    )   
 
 
 def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMetadataFinal):

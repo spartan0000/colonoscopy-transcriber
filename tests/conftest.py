@@ -18,7 +18,13 @@ from fastapi.testclient import TestClient
 
 load_dotenv()
 
-TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+TEST_DATABASE_URL = (
+    f"postgresql+psycopg2://{os.getenv('DB_USER')}:"
+    f"{os.getenv('DB_PASS')}@"
+    f"{os.getenv('DB_HOST')}:5432/test_db"
+    
+
+)
 
 test_engine = create_engine(TEST_DATABASE_URL)
 TestingSessionLocal = sessionmaker(bind=test_engine)

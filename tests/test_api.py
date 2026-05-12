@@ -8,7 +8,7 @@ from app.main import app
 
 from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata
 from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup
-from app.services.functions import map_procedure, map_findings, map_polyp
+from app.services.functions import map_procedure, map_findings, map_polyp, map_transcription
 
 from app.services import functions
 
@@ -172,3 +172,8 @@ def test_get_procedure_with_findings(db_session, client_db, procedure):
 
     assert response.status_code == 200
     assert len(data['findings']) == 1
+
+def test_transcript_not_found(client_db):
+    res = client_db.get("/transcripts/99999")
+    assert res.status_code == 404
+

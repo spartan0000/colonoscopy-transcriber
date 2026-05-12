@@ -1,5 +1,6 @@
 from sqlalchemy import func, Index, CheckConstraint, UniqueConstraint, Column, Integer, String, Float, ForeignKey, Boolean, DateTime, Text, Enum, Computed
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import JSONB
 
 import enum
 from typing import List, Optional
@@ -22,6 +23,11 @@ class DysplasiaGrade(enum.Enum):
     LOW_GRADE = "low_grade"
     HIGH_GRADE = "high_grade"
     NONE = "none"
+
+class TranscriptStatus(enum.Enum):
+    IN_PROGRESS = "in_progress"
+    FINALIZED = "finalized"
+
 
 # class PolypLocation(enum.Enum):
 #     CECUM = "cecum"
@@ -187,6 +193,35 @@ class FindingModel(Base):
     procedure: Mapped["ProcedureModel"] = relationship("ProcedureModel", back_populates="findings")
     location_ref: Mapped["PolypLocationLookup"] = relationship("PolypLocationLookup", back_populates="findings") #using the polyp location lookup table for both polyps and other findings (somewhat confusing though)
 
+
+#need table to manage state so that we can track progress of an unfinished report so that user can retrieve and finish it later
+
+class TranscriptModel(Base):
+    __tablename__ = "transcripts"
+
+    transcript_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=False)
+    patient_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    patient_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    endoscopist_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    procedure_date: Mapped[datetime] = mapped_column(DateTime())
+    indication: Mapped[str] = mapped_column(String(100), nullable = True)
+    cecum_reached: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    cecum_reached_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    procedure_end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    #withdrawal time is a computed colun in the procedures table so we store the cecum reached time and procedure end time here
+    bbps_right: Mapped[int] = mapped_column(Integer, nullable=True)
+    bbps_transverse: Mapped[int] = mapped_column(Integer, nullable=True)
+    bbps_left: Mapped[int] = mapped_column(Integer, nullable=True)
+    #bbps total is a computed column in the procedures table so we store the individual segment scores here for now, total computed when report finalized
+    polyps: Mapped[List] = mapped_column(JSONB)
+    findings: Mapped[List] = mapped_column(JSONB)
+    status: Mapped[TranscriptStatus] = mapped_column(Enum(TranscriptStatus), default=TranscriptStatus.IN_PROGRESS, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+
+
+    
 # class Histology(Base):
 #     __tablename__ = 'histology'
 
