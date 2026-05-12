@@ -25,7 +25,13 @@ DATABASE_URL = (
     f"{os.getenv('DB_NAME')}"
 
 )
-TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+TEST_DATABASE_URL = (
+    f"postgresql+psycopg2://{os.getenv('DB_USER')}:"
+    f"{os.getenv('DB_PASS')}@"
+    f"{os.getenv('DB_HOST')}:5432/test_db"
+    
+
+)
 
 engine = create_engine(DATABASE_URL)
 test_engine = create_engine(TEST_DATABASE_URL)

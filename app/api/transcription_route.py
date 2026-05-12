@@ -1,5 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, Depends, Form
+from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
 from app.database.connection import get_db
+from app.database.models import TranscriptModel
 
 from app.services import functions
 
@@ -22,7 +23,10 @@ router = APIRouter(tags=['transcription'])
 
 
 @router.post("/transcribe")
-async def transcribe(cecum_reached_time: datetime | None = Form(None), procedure_end_time: datetime | None = Form(None), file: UploadFile = File(...)):
+async def transcribe(cecum_reached_time: datetime | None = Form(None), 
+                     procedure_end_time: datetime | None = Form(None), 
+                     file: UploadFile = File(...),
+                     db: Session = Depends(get_db)):
     """
     handle transcription of uploaded audio file, extract relevant information, return structured JSON output
     """
@@ -73,10 +77,20 @@ async def transcribe(cecum_reached_time: datetime | None = Form(None), procedure
 
     logger.info(f"Full report: {full_report}")
     
+    try:
+        transcript = functions.map_transcription(full_report)
+        db.add(transcript)
+        db.commit()
+        db.refresh(transcript)
+        logger.info(f"Transcript created with ID: {transcript.id}")
+    except Exception as e:
+        logger.error(f"Failed to write transcript: {e}")
+        raise HTTPException(status_code=500, detail="failed to save transcript to database")
 
 
     return {
         'report': full_report,
-        'status': status
+        'status': status,
+        'transcript_id': transcript.id
     }
 

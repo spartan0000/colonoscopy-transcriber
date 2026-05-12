@@ -12,11 +12,11 @@ chat_client = AsyncAzureOpenAI(
     
 )
 
-hnz_client = AsyncAzureOpenAI(
-    api_version = os.getenv("HNZ_API_VERSION"),
-    api_key = os.getenv("HNZ_API_KEY"),
-    azure_endpoint = os.getenv("HNZ_ENDPOINT")
-)
+# hnz_client = AsyncAzureOpenAI(
+#     api_version = os.getenv("HNZ_API_VERSION"),
+#     api_key = os.getenv("HNZ_API_KEY"),
+#     azure_endpoint = os.getenv("HNZ_ENDPOINT")
+# )
 
 transcribe_client = AsyncAzureOpenAI(
     api_key = os.getenv("AZURE_OPENAI_API_KEY"),
