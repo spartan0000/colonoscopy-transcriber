@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import yaml
 import json
-
+from pydantic import BaseModel
 
 import random
 from datetime import date, datetime, timedelta
@@ -221,7 +221,7 @@ def map_procedure(report, metadata):
             
     )
 
-def map_transcription(full_report: ColonoscopyReportWithMetadataFinal):
+def map_transcription(full_report: ColonoscopyReportWithMetadata):
     return TranscriptModel(
         patient_id = full_report.metadata.patient_NHI,
         patient_name = full_report.metadata.patient_name,
@@ -234,8 +234,8 @@ def map_transcription(full_report: ColonoscopyReportWithMetadataFinal):
         bbps_right = full_report.report.bbps_right,
         bbps_transverse = full_report.report.bbps_transverse,
         bbps_left = full_report.report.bbps_left,
-        polyps = full_report.report.polyps,
-        findings = full_report.report.findings,
+        polyps = [p.model_dump() if isinstance (p, BaseModel) else p for p in full_report.report.polyps],
+        findings = [f.model_dump() if isinstance (f, BaseModel) else f for f in full_report.report.findings],
         #status is set to in_progress by default.  so in the final report generation function, we just update the status to finalized.
         
     )   

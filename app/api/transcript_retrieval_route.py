@@ -20,6 +20,7 @@ router = APIRouter(tags=['transcripts'])
 
 @router.get("/transcripts/{transcript_id}")
 def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
+    print(f"Retrieving transcript with ID: {transcript_id}")
     transcript = db.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
     if not transcript:
         raise HTTPException(status_code=404, detail="Transcript not found")
@@ -41,5 +42,5 @@ def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
         'findings': transcript.findings,
         'status': transcript.status,
         'created_at': transcript.created_at,
-        
+
     }

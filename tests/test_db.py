@@ -2,7 +2,7 @@ import pytest
 
 from datetime import datetime, date
 
-from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal
+from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal, ColonoscopyReportWithTime, ProcedureMetadata, ColonoscopyReportWithMetadata
 from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup
 from app.services.functions import map_procedure, map_findings, map_polyp
 
@@ -380,6 +380,55 @@ def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the 
 
     assert len(saved.polyps) == 1
     assert saved.polyps[0].size_mm == 5.0
+
+def test_transcript_creation_retrieval(db_session, client_db):
+    raw = {
+        'cecum_reached': True,
+        'cecum_reached_time': datetime(2025,1,1,10,0),
+        'procedure_end_time': datetime(2025,1,1,10,6),
+        'bbps_right' : 3,
+        'bbps_transverse' : 3,
+        'bbps_left' : 3,
+        
+        'polyps':[
+            {
+                'polyp_id': 1,
+                'location': 'cecum',
+                'morphology': 'sessile',
+                'size_mm':5.0
+            }
+        ],
+        'withdrawal_time': 100,
+
+    }
+
+    raw_metadata = {
+        'patient_name': 'bob thebuilder',
+        'patient_NHI': 'ABC1234',
+        'endoscopist_id': 1,
+        'patient_dob': date(1940,1,1),
+        'procedure_date': datetime(2025,1,1)
+    }
+
+    metadata = ProcedureMetadata(**raw_metadata)
+    report = ColonoscopyReportWithTime(**raw)
+
+    full_report = ColonoscopyReportWithMetadata(
+        metadata = metadata,
+        report = report
+    )
+
+    transcript = functions.map_transcription(full_report)
+    db_session.add(transcript)
+    db_session.commit()
+
+    print(f"transcript ID: {transcript.transcript_id}")
+    response = client_db.get(f"/transcripts/{transcript.transcript_id}")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data['patient_name'] == 'bob thebuilder'
 
 def test_full_pipeline_with_api_endpoint(db_session, client_db): #does raw JSON (from the LLM) end up in the database in correct format and can we retrieve it with the api endpoint
     raw = {

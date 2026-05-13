@@ -6,7 +6,7 @@ from app.database.models import ProcedureModel, PolypModel, PolypLocationLookup,
 
 from sqlalchemy.orm import Session
 
-from app.api import transcription_route, procedure_query_route, write_db_generate_pdf_route
+from app.api import transcription_route, procedure_query_route, write_db_generate_pdf_route, transcript_retrieval_route
 
 
 import random
@@ -56,3 +56,4 @@ load_dotenv()
 app.include_router(transcription_route.router)
 app.include_router(procedure_query_route.router)
 app.include_router(write_db_generate_pdf_route.router)
+app.include_router(transcript_retrieval_route.router)
