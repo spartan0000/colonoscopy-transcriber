@@ -64,6 +64,7 @@ class ProcedureMetadata(BaseModel):
     patient_NHI: Optional[str] = Field(default = None, description = "NHI number of patient")
     patient_dob: Optional[datetime] = Field(default = None, description = "patient date of birth")
     procedure_date: Optional[date] = Field(default = None, description="date of procedure") 
+    indication: Optional[str] = Field(default = None, description="text input for indication for procedure")
     endoscopist_id: Optional[int] = Field(default = None, description = "endoscopist_id performing the procedure")
 
 

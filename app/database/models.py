@@ -149,7 +149,7 @@ class ProcedureModel(Base):
     #specimens: List["Specimen"] = relationship("Specimen", back_populates="procedure", cascade="all, delete-orphan")
     endoscopist_ref: Mapped["EndoscopistLookup"] = relationship("EndoscopistLookup", back_populates="procedures")
     findings: Mapped[List["FindingModel"]] = relationship("FindingModel", back_populates="procedure", cascade="all, delete-orphan")
-
+    
 
 class PolypModel(Base):
     __tablename__ = "polyps"
@@ -200,27 +200,27 @@ class TranscriptModel(Base):
     __tablename__ = "transcripts"
 
     transcript_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=False)
+    procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=True) #nullable true since we want to allow creation of a transcript before we have all the procedure details, we can update the transcript later with the procedure_id once we have it.
     patient_id: Mapped[str] = mapped_column(String(50), nullable=False)
     patient_name: Mapped[str] = mapped_column(String(100), nullable=False)
     endoscopist_id: Mapped[int] = mapped_column(Integer, nullable=False)
     procedure_date: Mapped[datetime] = mapped_column(DateTime())
     indication: Mapped[str] = mapped_column(String(100), nullable = True)
     cecum_reached: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    cecum_reached_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    cecum_reached_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     procedure_end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     #withdrawal time is a computed colun in the procedures table so we store the cecum reached time and procedure end time here
     bbps_right: Mapped[int] = mapped_column(Integer, nullable=True)
     bbps_transverse: Mapped[int] = mapped_column(Integer, nullable=True)
     bbps_left: Mapped[int] = mapped_column(Integer, nullable=True)
     #bbps total is a computed column in the procedures table so we store the individual segment scores here for now, total computed when report finalized
-    polyps: Mapped[List] = mapped_column(JSONB)
-    findings: Mapped[List] = mapped_column(JSONB)
+    polyps: Mapped[List] = mapped_column(JSONB, nullable=False)
+    findings: Mapped[List] = mapped_column(JSONB, nullable=False)
     status: Mapped[TranscriptStatus] = mapped_column(Enum(TranscriptStatus), default=TranscriptStatus.IN_PROGRESS, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=True)
 
-
+    
     
 # class Histology(Base):
 #     __tablename__ = 'histology'
