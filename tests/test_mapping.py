@@ -1,8 +1,9 @@
 import pytest
 from pydantic import ValidationError
 from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal, FindingFinal, PolypFinal
+from app.models.colonoscopy import ColonoscopyReportWithTime, ProcedureMetadata, ColonoscopyReportWithMetadata
 from app.database.models import ProcedureModel, PolypModel, FindingModel
-from app.services.functions import map_polyp, map_findings, map_procedure
+from app.services.functions import map_polyp, map_findings, map_procedure, map_transcription
 from datetime import date, datetime
 
 from sqlalchemy.exc import IntegrityError
@@ -155,3 +156,45 @@ def test_full_mapping():
 
 
 
+def test_map_transcript():
+    raw = {
+        'cecum_reached': True,
+        'cecum_reached_time': datetime(2025,1,1,10,0),
+        'procedure_end_time': datetime(2025,1,1,10,6),
+        'bbps_right' : 3,
+        'bbps_transverse' : 3,
+        'bbps_left' : 3,
+        
+        'polyps':[
+            {
+                'polyp_id': 1,
+                'location': 'cecum',
+                'morphology': 'sessile',
+                'size_mm':5.0
+            }
+        ],
+        'withdrawal_time': 100,
+
+    }
+
+    raw_metadata = {
+        'patient_name': 'bob thebuilder',
+        'patient_NHI': 'ABC1234',
+        'endoscopist_id': 1,
+        'patient_dob': date(1940,1,1),
+        'procedure_date': datetime(2025,1,1)
+    }
+
+    metadata = ProcedureMetadata(**raw_metadata)
+    report = ColonoscopyReportWithTime(**raw)
+
+    full_report = ColonoscopyReportWithMetadata(
+        metadata=metadata,
+        report=report
+    )
+
+    mapped = map_transcription(full_report)
+
+    assert mapped.patient_name == 'bob thebuilder'
+    assert mapped.cecum_reached == True
+    assert len(mapped.polyps) == 1
