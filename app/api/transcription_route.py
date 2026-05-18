@@ -48,16 +48,30 @@ async def transcribe(cecum_reached_time: datetime | None = Form(None),
 
     #draft_id = get_draft_id()
 
-    transcription_result = await functions.transcribe_get_timestamps(file)
+    ##########BEGIN BLOCK
+    ###This function gets taken out because we changed the front end to send transcribed text instead of audio, but leaving it here now in case we want to switch back later
+
+    #transcription_result = await functions.transcribe_get_timestamps(file)
     
 
     ###Logging what comes back from the transcribe LLM
-    print("\n---TRANSCRIPTION OUTPUT---")
-    print(f"TRANSCRIPT: {transcription_result}")
+    #print("\n---TRANSCRIPTION OUTPUT---")
+    #print(f"TRANSCRIPT: {transcription_result}")
     ##################################################################
     
     
-    logger.info(f"Transcription with timestamps: {transcription_result}")
+    #logger.info(f"Transcription with timestamps: {transcription_result}")
+    ##########END BLOCK
+
+
+    ##########BEGIN BLOCK
+    #This takes transcribed text from the front end and picks up where the above block left off
+    contents = await file.read()
+    transcription_result = contents.decode('utf-8')
+
+
+    logger.info(f"Received transcription result: {transcription_result}")
+    ##########END BLOCK
 
     extracted_data, status = await functions.extract_json(transcription_result)
 
