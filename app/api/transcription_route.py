@@ -73,7 +73,9 @@ async def transcribe(cecum_reached_time: datetime | None = Form(None),
     logger.info(f"Received transcription result: {transcription_result}")
     ##########END BLOCK
 
-    extracted_data, status = await functions.extract_json(transcription_result)
+    #extracted_data, status = await functions.extract_json(transcription_result)
+
+    extracted_data, status = await functions.extract_json_from_text(transcription_result)
 
     
     #Logging what comes back from the chat LLM #######################
@@ -96,7 +98,7 @@ async def transcribe(cecum_reached_time: datetime | None = Form(None),
         db.add(transcript)
         db.commit()
         db.refresh(transcript)
-        logger.info(f"Transcript created with ID: {transcript.id}")
+        logger.info(f"Transcript created with ID: {transcript.transcript_id}")
     except Exception as e:
         logger.error(f"Failed to write transcript: {e}")
         raise HTTPException(status_code=500, detail="failed to save transcript to database")
@@ -105,6 +107,6 @@ async def transcribe(cecum_reached_time: datetime | None = Form(None),
     return {
         'report': full_report,
         'status': status,
-        'transcript_id': transcript.id
+        'transcript_id': transcript.transcript_id
     }
 
