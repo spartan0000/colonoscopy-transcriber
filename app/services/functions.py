@@ -106,6 +106,7 @@ def _empty_report() -> ColonoscopyReport:
             ) 
 
 #cleaned data (dictionary) then goes into this function to extract polyp data and other endoscopy data in structured format
+#this function for when we sent an audiofile from the browser, the one below is for when we send transcribed text from the browser
 async def extract_json(user_input: dict) -> dict:
     prompt = load_prompt('extraction_prompt.yaml')
     
@@ -116,6 +117,34 @@ async def extract_json(user_input: dict) -> dict:
     segments: {json.dumps(user_input['segments'], indent = 2)}
     """
 
+    try:
+        response = await chat_client.responses.parse(
+            model = "gpt-5-mini",
+            input = [
+                {'role': 'system', 'content': prompt},
+                {'role': 'user', 'content': transcript_text}
+            ],
+            text_format = ColonoscopyReport,
+        )
+    
+
+        if type(response.output_parsed) is str or response.output_parsed is None:
+            logger.info("LLM failed to return structured output")
+            logger.info("RAW:", response.output_text)
+            logger.warning("LLM extraction failed: empty output")
+            return _empty_report(), "failed"
+    
+    
+        return response.output_parsed, "success"
+    
+    except Exception as e:
+        print(f"LLM refusal or parse error: {e}")
+        logger.warning(f"LLM extraction failed: LLM refusal or parse error: {e}")
+        return _empty_report(), "failed"
+
+#this is for when we send transcribed text from the browser, so the input data is no longer a dictionary but a text string.    
+async def extract_json_from_text(transcript_text: str) -> dict:
+    prompt = load_prompt('extraction_prompt.yaml')
     try:
         response = await chat_client.responses.parse(
             model = "gpt-5-mini",
