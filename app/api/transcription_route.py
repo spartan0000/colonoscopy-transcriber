@@ -66,7 +66,7 @@ async def transcribe(cecum_reached_time: datetime | None = Form(None),
 
     ##########BEGIN BLOCK
     #This takes transcribed text from the front end and picks up where the above block left off
-    contents = await file.read()
+    
     transcription_result = contents.decode('utf-8')
 
 
