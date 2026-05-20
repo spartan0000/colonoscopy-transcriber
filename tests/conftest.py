@@ -90,6 +90,7 @@ def procedure(db_session):
         patient_name = "Santa Claus",
         procedure_date = datetime(2025,1,1),
         endoscopist_id = 1,
+        patient_dob = datetime(1980,1,1),
         cecum_reached = True,
         cecum_reached_time = datetime(2025,1,1,10,0),
         procedure_end_time = datetime(2025,1,1,10,6),

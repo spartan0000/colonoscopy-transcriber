@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 import enum
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, date
 
 class Base(DeclarativeBase):
     pass
@@ -103,6 +103,7 @@ class ProcedureModel(Base):
 
     procedure_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     patient_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    patient_dob: Mapped[date] = mapped_column(DateTime, nullable = False)
     patient_name: Mapped[str] = mapped_column(String(100), nullable=False) 
     endoscopist_id: Mapped[int] = mapped_column(Integer, ForeignKey("endoscopist_lookup.endoscopist_id"), nullable=False)
     
@@ -204,6 +205,7 @@ class TranscriptModel(Base):
     patient_id: Mapped[str] = mapped_column(String(50), nullable=False)
     patient_name: Mapped[str] = mapped_column(String(100), nullable=False)
     endoscopist_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    patient_dob: Mapped[date] = mapped_column(DateTime, nullable=False)
     procedure_date: Mapped[datetime] = mapped_column(DateTime())
     indication: Mapped[str] = mapped_column(String(100), nullable = True)
     cecum_reached: Mapped[bool] = mapped_column(Boolean, nullable=False)
