@@ -24,8 +24,8 @@ def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
     transcript = db.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
     if not transcript:
         raise HTTPException(status_code=404, detail="Transcript not found")
-    return {
-        'transcript_id': transcript.transcript_id,
+    
+    report = {
         'procedure_id': transcript.procedure_id,
         'patient_id': transcript.patient_id,
         'patient_name': transcript.patient_name,
@@ -38,9 +38,16 @@ def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
         'bbps_right': transcript.bbps_right,
         'bbps_transverse': transcript.bbps_transverse,
         'bbps_left': transcript.bbps_left,
-        'polyp': transcript.polyps,
+        'polyps': transcript.polyps,
         'findings': transcript.findings,
         'status': transcript.status,
         'created_at': transcript.created_at,
+        }
+    
+    
+    return {
+        'transcript_id': transcript.transcript_id,
+        'report': report,
+        'status': transcript.status,
 
     }
