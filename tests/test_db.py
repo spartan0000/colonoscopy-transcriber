@@ -153,20 +153,8 @@ def test_delete_procedure_cascade(db_session, procedure):
 ### need to also test new constraints around procedure times, withdrawal times ###
 ##################################################################################
 
-def test_withdrawal_time_computed(db_session):
-    proc1 = ProcedureModel(
-        patient_id = "ABC1234",
-        patient_name = "santa claus",
-        procedure_date = datetime(2024,1,1),
-        endoscopist_id = 1,
-        cecum_reached = True,
-        cecum_reached_time = datetime(2025,1,1,10,0),
-        procedure_end_time = datetime(2025,1,1,10,6),
-        bbps_right = 3,
-        bbps_transverse = 3,
-        bbps_left = 3,
-        
-    )
+def test_withdrawal_time_computed(db_session, procedure):
+    proc1 = procedure
 
     db_session.add(proc1)
     db_session.commit()
@@ -174,11 +162,12 @@ def test_withdrawal_time_computed(db_session):
 
     assert proc1.withdrawal_time == 6.0
 
-def test_withdrawal_time_cecum_not_reached(db_session):
+def test_withdrawal_time_cecum_not_reached(db_session, procedure):
     proc1 = ProcedureModel(
         patient_id = "ABC1234",
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
+        patient_dob = datetime(1980,1,1),
         endoscopist_id = 1,
         cecum_reached = False,
         cecum_reached_time = None,
@@ -199,6 +188,7 @@ def test_times_wrong_order(db_session):
         patient_id = "ABC1234",
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
+        patient_dob = datetime(1980,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
         cecum_reached_time = datetime(2025,1,1,10,6),
@@ -219,6 +209,7 @@ def test_unique_patient_date(db_session):
         patient_id = "ABC1234",
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
+        patient_dob = datetime(1980,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
         cecum_reached_time = datetime(2025,1,1,10,0),
@@ -233,6 +224,7 @@ def test_unique_patient_date(db_session):
         patient_id = "ABC1234",
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
+        patient_dob = datetime(1980,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
         cecum_reached_time = datetime(2025,1,1,10,0),
@@ -251,20 +243,8 @@ def test_unique_patient_date(db_session):
     with pytest.raises(IntegrityError):
         db_session.commit() 
 
-def test_bbps_computed_column(db_session): #does the bbps_total computed column work correctly
-    proc1 = ProcedureModel(
-        patient_id = "ABC1234",
-        patient_name = "santa claus",
-        procedure_date = datetime(2024,1,1),
-        endoscopist_id = 1,
-        cecum_reached = True,
-        cecum_reached_time = datetime(2025,1,1,10,0),
-        procedure_end_time = datetime(2025,1,1,10,6),
-        bbps_right = 3,
-        bbps_transverse = 3,
-        bbps_left = 3,
-        
-    )
+def test_bbps_computed_column(db_session, procedure): #does the bbps_total computed column work correctly
+    proc1 = procedure
 
     db_session.add(proc1)
     db_session.commit()
@@ -277,6 +257,7 @@ def test_bbps_null_value(db_session): #does a null value for a segment result in
         patient_id = "ABC1234",
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
+        patient_dob = datetime(1980,1,1),
         endoscopist_id = 1,
         cecum_reached = True,
         cecum_reached_time = datetime(2025,1,1,10,0),
@@ -301,6 +282,7 @@ def test_bbps_insert_update_total(db_session): #does the null bbps_total value u
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
         endoscopist_id = 1,
+        patient_dob = datetime(1980,1,1),
         cecum_reached = True,
         cecum_reached_time = datetime(2025,1,1,10,0),
         procedure_end_time = datetime(2025,1,1,10,6),
@@ -398,7 +380,7 @@ def test_transcript_creation_retrieval(db_session, client_db):
                 'size_mm':5.0
             }
         ],
-        'withdrawal_time': 100,
+        
 
     }
 
@@ -428,7 +410,7 @@ def test_transcript_creation_retrieval(db_session, client_db):
     assert response.status_code == 200
     data = response.json()
 
-    assert data['patient_name'] == 'bob thebuilder'
+    assert data['report']['metadata']['patient_name'] == 'bob thebuilder'
 
 def test_full_pipeline_with_api_endpoint(db_session, client_db): #does raw JSON (from the LLM) end up in the database in correct format and can we retrieve it with the api endpoint
     raw = {

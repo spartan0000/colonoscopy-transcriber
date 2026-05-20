@@ -9,7 +9,7 @@ class Polyp(BaseModel):
     size_mm: Optional[float] = Field(ge=0, default = None, description = "size of the polyp in millimeters")
     morphology: Literal["sessile", "pedunculated", "semi_pedunculated", "flat", "other"] = Field(default = None)
     location: Literal["cecum", "ascending_colon", "hepatic_flexure", "transverse_colon", "splenic_flexure", "descending_colon", "sigmoid_colon", "rectum", "anus", "other"] = Field(default = None)
-    resection_method: Literal["snare", "cold_snare", "hot_snare", "biopsy_forceps", "lift_and_resect", "other"] = Field(default = None)
+    resection_method: Optional[Literal["snare", "cold_snare", "hot_snare", "biopsy_forceps", "lift_and_resect", "other"]] = Field(default = None)
     resection_complete: Optional[bool] = Field(default = None, description = "whether the polyp resection was complete")
     retrieved: Optional[bool] = Field(default = None, description = "whether the polyp was retrieved")
 

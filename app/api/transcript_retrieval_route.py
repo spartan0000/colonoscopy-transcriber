@@ -4,7 +4,7 @@ from app.database.models import TranscriptModel
 
 from app.services import functions
 
-from app.models.colonoscopy import ColonoscopyReport
+from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
 from app.logger import logger
 
 
@@ -21,29 +21,38 @@ router = APIRouter(tags=['transcripts'])
 @router.get("/transcripts/{transcript_id}")
 def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
     print(f"Retrieving transcript with ID: {transcript_id}")
+    logger.info(f"Retrieving transcript with ID: {transcript_id}")
     transcript = db.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
     if not transcript:
         raise HTTPException(status_code=404, detail="Transcript not found")
     
-    report = {
-        'procedure_id': transcript.procedure_id,
-        'patient_id': transcript.patient_id,
-        'patient_name': transcript.patient_name,
-        'procedure_date': transcript.procedure_date,
-        'endoscopist_id': transcript.endoscopist_id,
-        'indication': transcript.indication,
-        'cecum_reached': transcript.cecum_reached,
-        'cecum_reached_time': transcript.cecum_reached_time,
-        'procedure_end_time': transcript.procedure_end_time,
-        'bbps_right': transcript.bbps_right,
-        'bbps_transverse': transcript.bbps_transverse,
-        'bbps_left': transcript.bbps_left,
-        'polyps': transcript.polyps,
-        'findings': transcript.findings,
-        'status': transcript.status,
-        'created_at': transcript.created_at,
-        }
-    
+
+
+    metadata = ProcedureMetadata(
+        patient_NHI = transcript.patient_id,
+        patient_name = transcript.patient_name,
+        procedure_date = transcript.procedure_date,
+        endoscopist_id = transcript.endoscopist_id,
+        indication = transcript.indication,
+        patient_dob = transcript.patient_dob,
+    )
+
+    scope = ColonoscopyReportWithTime(
+        cecum_reached = transcript.cecum_reached,
+        cecum_reached_time = transcript.cecum_reached_time,
+        procedure_end_time = transcript.procedure_end_time,
+        bbps_right = transcript.bbps_right,
+        bbps_transverse = transcript.bbps_transverse,
+        bbps_left = transcript.bbps_left,
+        polyps = transcript.polyps,
+        findings = transcript.findings,
+
+    )
+
+    report = ColonoscopyReportWithMetadata(
+        metadata = metadata,
+        report = scope
+    )
     
     return {
         'transcript_id': transcript.transcript_id,
