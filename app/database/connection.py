@@ -14,21 +14,21 @@ load_dotenv()
 # print("DB_HOST =", os.getenv("DB_HOST"))
 # print("DB_NAME =", os.getenv("DB_NAME"))
 
-for var in ["DB_USER", "DB_PASS", "DB_HOST", "DB_NAME"]:
+for var in ["DB_USER", "DB_PASS", "DB_HOST_TEST", "DB_HOST_PROD", "DB_NAME"]:
     if not os.getenv(var):
         raise ValueError(f"{var} is not set")
 
 DATABASE_URL = (
     f"postgresql+psycopg2://{os.getenv('DB_USER')}:"
     f"{os.getenv('DB_PASS')}@"
-    f"{os.getenv('DB_HOST')}:5432/"
+    f"{os.getenv('DB_HOST_PROD')}:5432/"
     f"{os.getenv('DB_NAME')}"
 
 )
 TEST_DATABASE_URL = (
     f"postgresql+psycopg2://{os.getenv('DB_USER')}:"
     f"{os.getenv('DB_PASS')}@"
-    f"{os.getenv('DB_HOST')}:5432/test_db"
+    f"{os.getenv('DB_HOST_TEST')}:5432/test_db"
     
 
 )

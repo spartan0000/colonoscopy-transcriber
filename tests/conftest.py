@@ -21,7 +21,7 @@ load_dotenv()
 TEST_DATABASE_URL = (
     f"postgresql+psycopg2://{os.getenv('DB_USER')}:"
     f"{os.getenv('DB_PASS')}@"
-    f"{os.getenv('DB_HOST')}:5432/test_db"
+    f"{os.getenv('DB_HOST_TEST')}:5432/test_db"
     
 
 )
