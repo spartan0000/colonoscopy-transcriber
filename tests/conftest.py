@@ -31,11 +31,13 @@ TestingSessionLocal = sessionmaker(bind=test_engine)
 
 @pytest.fixture(scope="session", autouse=True)
 def engine():
-    test_engine = create_engine(TEST_DATABASE_URL)
+    
     Base.metadata.drop_all(test_engine)
     Base.metadata.create_all(test_engine)
 
-    return test_engine
+    yield test_engine
+
+    Base.metadata.drop_all(test_engine)
     
 
 
