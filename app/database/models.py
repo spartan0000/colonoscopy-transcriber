@@ -223,6 +223,18 @@ class TranscriptModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=True)
 
+class Images(Base):
+    __tablename__ = 'images'
+
+    image_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    transcript_id: Mapped[int] = mapped_column(Integer, ForeignKey("transcripts.transcript_id", ondelete = "CASCADE"), nullable=False)
+    image_path: Mapped[str] = mapped_column(String(200), nullable = False)
+    anatomic_location: Mapped[str] = mapped_column(String(200))
+    #this is whether the image was auto labelled or manually labelled for use later on
+    label_source: Mapped[str] = mapped_column(String(100))
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default = func.now(), nullable=False)
+
     
     
 # class Histology(Base):
