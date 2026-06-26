@@ -209,8 +209,9 @@ class TranscriptModel(Base):
     procedure_date: Mapped[datetime] = mapped_column(DateTime())
     indication: Mapped[str] = mapped_column(String(100), nullable = True)
     cecum_reached: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    cecum_reached_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    procedure_end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    #changed the times to nullable = True, can enforce that they exist at the "finalize" application layer and not here in the database
+    cecum_reached_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    procedure_end_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     #withdrawal time is a computed colun in the procedures table so we store the cecum reached time and procedure end time here
     bbps_right: Mapped[int] = mapped_column(Integer, nullable=True)
     bbps_transverse: Mapped[int] = mapped_column(Integer, nullable=True)

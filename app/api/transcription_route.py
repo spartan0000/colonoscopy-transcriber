@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
 from app.database.connection import get_db
-from app.database.models import TranscriptModel
+from app.database.models import TranscriptModel, TranscriptStatus
 
 from app.services import functions
 
@@ -14,7 +14,7 @@ import uuid
 
 from dateutil.parser import isoparse
 
-from datetime import datetime
+from datetime import datetime, date
 
 def get_draft_id():
     return str(uuid.uuid4())
@@ -22,11 +22,40 @@ def get_draft_id():
 router = APIRouter(tags=['transcription'])
 
 
-@router.post("/transcribe")
-async def transcribe(cecum_reached_time: datetime | None = Form(None), 
+
+@router.post("/transcripts/start")
+def start_procedure(db: Session = Depends(get_db)):
+    fake_transcript = TranscriptModel(
+        patient_id = 'ABC1234',
+        patient_name = 'Santa Claus',
+        endoscopist_id = 1,
+        patient_dob = date(1945,1,1),
+        procedure_date = date.today(),
+        cecum_reached = False,
+        polyps = [],
+        findings = [],
+        status = TranscriptStatus.IN_PROGRESS,
+        created_at = datetime.now()
+
+)
+    db.add(fake_transcript)
+    db.commit()
+    db.refresh(fake_transcript)
+
+    return {"transcript_id": fake_transcript.transcript_id}
+
+@router.post("/transcribe/{transcript_id}")
+async def transcribe(transcript_id: int,
+                     cecum_reached_time: datetime | None = Form(None), 
                      procedure_end_time: datetime | None = Form(None), 
                      file: UploadFile = File(...),
                      db: Session = Depends(get_db)):
+    
+    transcript = db.query(TranscriptModel).filter_by(transcript_id = transcript_id).first()
+
+    if not transcript:
+        raise HTTPException(status_code = 404, detail = "transcript not found")
+
     """
     handle transcription of uploaded audio file, extract relevant information, return structured JSON output
     """
@@ -94,8 +123,25 @@ async def transcribe(cecum_reached_time: datetime | None = Form(None),
     logger.info(f"Full report: {full_report}")
     
     try:
-        transcript = functions.map_transcription(full_report)
-        db.add(transcript)
+        updated = functions.map_transcription(full_report)
+
+        transcript.patient_id = updated.patient_id
+        transcript.patient_name = updated.patient_name
+        transcript.procedure_date = updated.procedure_date
+        transcript.endoscopist_id = updated.endoscopist_id
+        transcript.patient_dob = updated.patient_dob
+        transcript.indication = updated.indication
+        transcript.cecum_reached = updated.cecum_reached
+        transcript.cecum_reached_time = updated.cecum_reached_time
+        transcript.procedure_end_time = updated.procedure_end_time
+        transcript.bbps_left = updated.bbps_left
+        transcript.bbps_transverse = updated.bbps_transverse
+        transcript.bbps_right = updated.bbps_right
+        transcript.polyps = updated.polyp
+        transcript.findings = updated.findings
+
+
+        
         db.commit()
         db.refresh(transcript)
         logger.info(f"Transcript created with ID: {transcript.transcript_id}")
