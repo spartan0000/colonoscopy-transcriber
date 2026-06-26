@@ -57,14 +57,14 @@ def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
 
     
     #may need to tweak this return depending on how we want to actually display images - static files vs binaries
-    
+
     return {
         'transcript_id': transcript.transcript_id,
         'report': report,
         'status': transcript.status,
         'images': [
             {
-                'image_id': img.image_id,
+                'image_id': img.image_id, #the image id is then used by the get_images endpont to pull images and display in the browser
                 'image_path': img.image_path,
                 'anatomic_location': img.anatomic_location,
                 'captured_at': img.captured_at
