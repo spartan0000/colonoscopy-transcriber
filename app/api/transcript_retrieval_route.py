@@ -4,7 +4,7 @@ from app.database.models import TranscriptModel
 
 from app.services import functions
 
-from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
+from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp, Images
 from app.logger import logger
 
 
@@ -23,6 +23,7 @@ def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
     print(f"Retrieving transcript with ID: {transcript_id}")
     logger.info(f"Retrieving transcript with ID: {transcript_id}")
     transcript = db.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
+    images = db.query(Images).filter_by(transcript_id = transcript_id).all()
     if not transcript:
         raise HTTPException(status_code=404, detail="Transcript not found")
     
@@ -53,10 +54,22 @@ def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
         metadata = metadata,
         report = scope
     )
+
+    
+    #may need to tweak this return depending on how we want to actually display images - static files vs binaries
     
     return {
         'transcript_id': transcript.transcript_id,
         'report': report,
         'status': transcript.status,
+        'images': [
+            {
+                'image_id': img.image_id,
+                'image_path': img.image_path,
+                'anatomic_location': img.anatomic_location,
+                'captured_at': img.captured_at
+            }
+            for img in images
+        ]
 
     }
