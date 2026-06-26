@@ -2,11 +2,11 @@ from app.database.connection import SessionLocal
 from app.services.functions import transcribe_get_timestamps, extract_json
 from app.database.connection import SessionLocal, get_db
 
-from app.database.models import ProcedureModel, PolypModel, PolypLocationLookup, EndoscopistLookup
+from app.database.models import ProcedureModel, PolypModel, PolypLocationLookup, TranscriptModel, EndoscopistLookup, Images
 
 from sqlalchemy.orm import Session
 
-from app.api import transcription_route, procedure_query_route, write_db_generate_pdf_route, transcript_retrieval_route
+from app.api import transcription_route, procedure_query_route, write_db_generate_pdf_route, transcript_retrieval_route, get_images_route
 
 
 import random
@@ -57,3 +57,4 @@ app.include_router(transcription_route.router)
 app.include_router(procedure_query_route.router)
 app.include_router(write_db_generate_pdf_route.router)
 app.include_router(transcript_retrieval_route.router)
+app.include_router(get_images_route.router)
