@@ -4,7 +4,7 @@ from app.database.connection import get_db
 
 from app.services import functions, pdf_generator
 
-from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal
+from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, Images, TranscriptModel
 
 from sqlalchemy.orm import Session
 
@@ -19,12 +19,19 @@ from app.config import OUTPUT_DIR, API_BASE
 router = APIRouter(tags=['write_db_pdf'])
 
 @router.post("/write")
-def write_db_pdf(full_report: ColonoscopyReportWithMetadataFinal, db: Session = Depends(get_db)):
+def write_db_pdf(transcript_id: int, full_report: ColonoscopyReportWithMetadataFinal, db: Session = Depends(get_db)):
+    images = db.query(Images).filter_by(transcript_id = transcript_id).all()
+
 
     logger.info(f"Logging to DB: {full_report.model_dump()}")
     #write to the database here once the data returns from the user
     try:
-        procedure = functions.write_transcription_record(db=db, full_report = full_report)
+        procedure = functions.write_transcription_record(db=db, full_report = full_report) #this function includes writing to the database
+
+        #link procedure id to transcript id now that we have a procedure id
+        transcript = db.query(TranscriptModel).filter_by(transcript_id = transcript_id).first()
+        transcript.procedure_id = procedure.procedure_id
+        db.commit()
 
         print("LOGGING TO DB COMPLETE")
         print(f"PROCEDURE_ID: {procedure.procedure_id}")
@@ -44,7 +51,7 @@ def write_db_pdf(full_report: ColonoscopyReportWithMetadataFinal, db: Session = 
 
 
     try:
-        pdf_bytes = pdf_generator.generate_colonoscopy_report_pdf(full_report)
+        pdf_bytes = pdf_generator.generate_colonoscopy_report_pdf(full_report, images = images)
 
         filename = f"colonoscopy_report_{full_report.metadata.patient_NHI}.pdf"
         filepath = OUTPUT_DIR/filename

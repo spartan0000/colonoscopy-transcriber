@@ -18,7 +18,7 @@ def _calculate_age(dob: date, procedure_date: date) -> str:
     return f"{years}y{months}m"
  
  
-def generate_colonoscopy_report_pdf(data: ColonoscopyReportWithMetadataFinal) -> BytesIO:
+def generate_colonoscopy_report_pdf(data: ColonoscopyReportWithMetadataFinal, images: list = []) -> BytesIO:
     """
     Generate a colonoscopy report PDF from structured data.
     
@@ -51,6 +51,9 @@ def generate_colonoscopy_report_pdf(data: ColonoscopyReportWithMetadataFinal) ->
     
     # Summary section
     _add_summary_section(pdf, data.report, line_height, section_spacing)
+
+    if images:
+        _add_images_section(pdf, images, line_height, section_spacing)
     
     # Convert to bytes
     pdf_output = BytesIO()
@@ -242,4 +245,36 @@ def _format_polyp_summary(location: str, polyps: List[PolypFinal]) -> str:
 def _add_wrapped_text(pdf: FPDF, text: str, line_height: float) -> None:
     """Add text with word wrapping."""
     pdf.multi_cell(0, line_height, text)
- 
+
+
+def _add_images_section(pdf: FPDF, images: list, line_height: float, section_spacing:float) -> None:
+    """Add procedure images in two column layout with captions."""
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", size=11)
+    pdf.cell(0, line_height, "Procedure Images", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.ln(section_spacing)
+
+    image_width = 85  # mm, two columns with margins
+    image_height = 65  # mm
+    left_x = 10
+    right_x = 110
+
+    for i, img in enumerate(images):
+        if not os.path.exists(img.image_path):
+            continue
+        
+        x = left_x if i % 2 == 0 else right_x
+        y = pdf.get_y()
+        
+        pdf.image(img.image_path, x=x, y=y, w=image_width, h=image_height)
+        
+        # caption below image
+        pdf.set_xy(x, y + image_height + 1)
+        pdf.set_font("Helvetica", size=8)
+        location = img.anatomic_location or "Unlabelled"
+        captured = img.captured_at.strftime("%H:%M:%S") if img.captured_at else ""
+        pdf.cell(image_width, 4, f"{location} - {captured}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        
+        # move down after each row pair
+        if i % 2 == 1:
+            pdf.ln(image_height + 10)
