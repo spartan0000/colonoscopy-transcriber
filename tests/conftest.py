@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+load_dotenv(".env.test")
+
+
 import pytest
 import os
 
@@ -10,13 +14,13 @@ from app.main import app
 
 from app.database.seed_lookup_tables import seed_endoscopists, seed_polyp_locations
 
-from dotenv import load_dotenv
+
 
 from datetime import datetime, timedelta
 
 from fastapi.testclient import TestClient
 
-load_dotenv()
+
 
 TEST_DATABASE_URL = (
     f"postgresql+psycopg2://{os.getenv('DB_USER')}:"
@@ -25,6 +29,7 @@ TEST_DATABASE_URL = (
     
 
 )
+
 
 test_engine = create_engine(TEST_DATABASE_URL)
 TestingSessionLocal = sessionmaker(bind=test_engine)

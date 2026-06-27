@@ -13,6 +13,8 @@ load_dotenv()
 # print("DB_PASS =", os.getenv("DB_PASS"))
 # print("DB_HOST =", os.getenv("DB_HOST"))
 # print("DB_NAME =", os.getenv("DB_NAME"))
+# print("DB_HOST_TEST= ", os.getenv('DB_HOST_TEST'))
+# print("DB_HOST_PROD= ", os.getenv('DB_HOST_PROD'))
 
 for var in ["DB_USER", "DB_PASS", "DB_HOST_TEST", "DB_HOST_PROD", "DB_NAME"]:
     if not os.getenv(var):
