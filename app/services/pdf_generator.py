@@ -3,6 +3,7 @@ from io import BytesIO
 from datetime import date
 from typing import Optional, List, Literal
 from pydantic import BaseModel, Field
+import os
 
 from app.models.colonoscopy import PolypFinal, FindingFinal, ColonoscopyReportFinal, ProcedureMetadataFinal, ColonoscopyReportWithMetadataFinal
  

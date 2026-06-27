@@ -180,3 +180,8 @@ def test_transcript_not_found(client_db):
     res = client_db.get("/transcripts/99999")
     assert res.status_code == 404
 
+def test_start_route(client_db):
+    res = client_db.post("/transcripts/start")
+    assert res.status_code == 200
+    data = res.json()
+    assert data['transcript_id'] is not None

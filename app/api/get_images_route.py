@@ -2,11 +2,11 @@ from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
 from fastapi.responses import FileResponse
 
 from app.database.connection import get_db
-from app.database.models import TranscriptModel
+from app.database.models import TranscriptModel, Images
 
 from app.services import functions
 
-from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp, Images
+from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
 from app.logger import logger
 
 

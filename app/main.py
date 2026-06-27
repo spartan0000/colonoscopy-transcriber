@@ -29,7 +29,8 @@ from app.config import OUTPUT_DIR
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db_deployment(SessionLocal, engine)
+    if os.getenv("ENV") != 'test':
+        init_db_deployment(SessionLocal, engine)
 
     yield
 

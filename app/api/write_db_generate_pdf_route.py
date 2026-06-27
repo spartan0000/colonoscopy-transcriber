@@ -4,7 +4,9 @@ from app.database.connection import get_db
 
 from app.services import functions, pdf_generator
 
-from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, Images, TranscriptModel
+from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal
+from app.database.models import Images, TranscriptModel
+
 
 from sqlalchemy.orm import Session
 
@@ -51,6 +53,7 @@ def write_db_pdf(transcript_id: int, full_report: ColonoscopyReportWithMetadataF
 
 
     try:
+        #images included in pdf generator
         pdf_bytes = pdf_generator.generate_colonoscopy_report_pdf(full_report, images = images)
 
         filename = f"colonoscopy_report_{full_report.metadata.patient_NHI}.pdf"
