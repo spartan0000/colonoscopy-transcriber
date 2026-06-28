@@ -1,7 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
 from app.database.connection import get_db
 from app.database.models import TranscriptModel, Images
-
+import pathlib
 from app.services import functions
 
 from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
@@ -73,3 +73,30 @@ def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
         ]
 
     }
+
+
+
+#upload endpoint called from capture.py which sends images to fastapi server for persistent storage and also metadata gets sent to database
+
+@router.post("/transcripts/{transcript_id}/images")
+def upload_image(transcript_id: int, image: UploadFile = File(...), captured_at: str = Form(...), db: Session = Depends(get_db)):
+    transcript = db.query(TranscriptModel).filter_by(transcript_id = transcript_id).first()
+    if not transcript:
+        raise HTTPException(status_code = 404, detail = "Transcript not found")
+    filename = f"transcript_{transcript_id}_{captured_at}.png"
+    filepath = f"./uploads/{filename}"
+
+    with open(filepath, "wb") as f:
+        f.write(image.file.read())
+    image_record = Images(
+        transcript_id = transcript_id,
+        image_path = filepath,
+        captured_at = captured_at,
+        anatomic_location = None
+    )
+
+    db.add(image_record)
+    db.commit()
+    db.refresh(image_record)
+
+    return {'image_id': image_record.image_id}

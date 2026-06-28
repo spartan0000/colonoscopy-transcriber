@@ -119,3 +119,11 @@ def seed_lookup(db_session):
 
     db_session.commit()
 
+#temporary image path for tests to store images and then roll back
+@pytest.fixture(scope="function")
+def temp_image(tmp_path):
+    image_path = tmp_path / "test_image.png"
+    image_path.write_bytes(b"fake_image_data")
+
+    yield image_path
+
