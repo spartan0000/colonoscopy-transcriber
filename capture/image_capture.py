@@ -12,7 +12,7 @@ def run_trigger_capture(transcript_id: int, device_index:int = 0):
 
     os.makedirs(output_folder, exist_ok = True)
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(device_index)
 
     print("---Press SPACE to capture, ESC to quit---")
 
@@ -33,14 +33,14 @@ def run_trigger_capture(transcript_id: int, device_index:int = 0):
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             filename = os.path.join(output_folder, f"endoscope_{timestamp}.png")
             cv2.imwrite(filename, frame)
-            print(f"[Trigger detected] Saved image: {filename}")
+            print(f"[Trigger detected] Saved image: {filename}") #images now saved locally
 
-            try:
+            try: #sending images to fastapi server
                 with open(filename, "rb") as f:
                     response = requests.post(
                         f"/transcripts/{transcript_id}/images",
-                        files = {"image":(os.path.basename(filename), f, "image/png" )},
-                        data = {"captured_at":timestamp.isoformat()}
+                        files = {"image":(os.path.basename(filename), f, "image/png" )}, 
+                        data = {"captured_at":timestamp}
                         )
                     response.raise_for_status()
                     print(f"Uploaded: image id: {response.json()['image_id']}")
