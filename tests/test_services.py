@@ -3,7 +3,7 @@ import pytest
 
 
 from datetime import datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, MagicMock
 
 from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding
 
@@ -100,6 +100,7 @@ async def test_extract_json_2():
     
     assert result.bbps_right is None
 
+#if chat LLM refuses to transcribe text, returns default model
 @pytest.mark.asyncio
 async def test_extract_json_llm_refusal():
     mock_response = AsyncMock()
@@ -119,3 +120,5 @@ async def test_extract_json_exception():
     with patch('app.services.functions.chat_client.responses.parse', side_effect = Exception("API fail")):
         result, status = await functions.extract_json({'entire_text': 'x', 'segments':[]})
     assert result == functions._empty_report()
+
+
