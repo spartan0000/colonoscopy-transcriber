@@ -4,7 +4,7 @@ load_dotenv(".env.test")
 
 import pytest
 import os
-
+import numpy as np
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -14,8 +14,7 @@ from app.main import app
 
 from app.database.seed_lookup_tables import seed_endoscopists, seed_polyp_locations
 
-
-
+from unittest.mock import MagicMock
 from datetime import datetime, timedelta
 
 from fastapi.testclient import TestClient
@@ -120,6 +119,7 @@ def seed_lookup(db_session):
     db_session.commit()
 
 #temporary image path for tests to store images and then roll back
+
 @pytest.fixture(scope="function")
 def temp_image(tmp_path):
     image_path = tmp_path / "test_image.png"
@@ -127,3 +127,14 @@ def temp_image(tmp_path):
 
     yield image_path
 
+#fake frame for image capture tests
+@pytest.fixture(scope="function")
+def fake_frame():
+    return np.zeros((480,640,3), dtype=np.uint8)
+
+#fake image capture returns True and fake_frame simulating successful image capture
+@pytest.fixture(scope="function")
+def mock_cap(fake_frame):
+    cap = MagicMock()
+    cap.read.return_value = (True, fake_frame)
+    return cap
