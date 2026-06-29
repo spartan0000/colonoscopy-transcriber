@@ -2,9 +2,11 @@ import pytest
 from unittest.mock import patch, AsyncMock, MagicMock, mock_open
 
 import numpy as np
+import requests
 
 from capture.image_capture import run_trigger_capture, upload_image, save_frame_locally
 
+#tests save local functionality
 def test_save_frame_locally(tmp_path, fake_frame):
     with patch("capture.image_capture.os.makedirs"),\
             patch("capture.image_capture.cv2.imwrite", return_value = True):
@@ -19,33 +21,47 @@ def test_save_frame_locally_creates_directory(tmp_path, fake_frame):
 
         mock_makedirs.assert_called_once_with(str(tmp_path), exist_ok = True)
 
-def test_capture_upload_image_space_key(tmp_path):
-    fake_frame = np.zeros((480,640,3), dtype = np.uint8)
+def test_save_frame_locally_calls_imwrite(tmp_path, fake_frame):
+    with patch("capture.image_capture.os.makedirs"),\
+        patch("capture.image_capture.cv2.imwrite") as mock_imwrite:
 
-    mock_cap = MagicMock()
-    mock_cap.read.return_value = (True, fake_frame)
+        save_frame_locally(fake_frame, str(tmp_path), "20260101_120000")
 
-    #simulate image capture
+        mock_imwrite.assert_called_once()
 
-    with patch("capture.image_capture.cv2.VideoCapture", return_value = mock_cap),\
-        patch("capture.image_capture.cv2.imshow"), \
-        patch("capture.image_capture.cv2.waitKey", side_effect = [32,27]), \
-        patch("capture.image_capture.cv2.imwrite", return_value = True), \
-        patch("builtins.open", mock_open(read_data = b'fake_image_bytes')), \
-        patch("capture.image_capture.cv2.destroyAllWindows"), \
-        patch("capture.image_capture.requests.post") as mock_post, \
-        patch("capture.image_capture.os.makedirs"):
+#tests upload image functionality
 
-        mock_post.return_value.status_code = 200 #response.status_code mock
-        mock_post.return_value.raise_for_status = MagicMock() #response.raise_for_status - does nothing here
-        mock_post.return_value.json.return_value = {'image_id': 'test-image-123'}
+def test_upload_image_success(tmp_path):
+    filename = str(tmp_path / "endoscope_20260101_120000.png")
+    mock_response = MagicMock()
+    mock_response.json.return_value = {'image_id': 'test-image-123'}
+    mock_response.raise_for_status = MagicMock() #basically a success scenario guaranteed for this test
 
-        run_trigger_capture(transcript_id = 1)
+    with patch("capture.image_capture.requests.post", return_value = mock_response) as mock_post,\
+        patch("builtins.open", mock_open(read_data = b'fake_image_bytes')):
+
+        result = upload_image(filename, transcript_id = 1) #the requested endpoint returns image_id
+
+        assert result['image_id'] == 'test-image-123'
 
         mock_post.assert_called_once()
 
-        call_args = mock_post.call_args
+        assert '/transcripts/1/images' in mock_post.call_args.args[0] 
+        args, kwargs = mock_post.call_args
 
-        assert str(call_args.kwargs['files']['image'][0]).endswith('png')
+        assert kwargs['data']['captured_at'] is not None
 
-        assert 'captured_at' in call_args.kwargs['data']
+def test_upload_images_raises_on_failure(tmp_path):
+    filename = str(tmp_path / "endoscope_20260101_120000")
+
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = requests.RequestException("Server error")
+
+    with patch("capture.image_capture.requests.post", return_value = mock_response),\
+        patch('builtins.open', mock_open(read_data=b'fake_image_bytes')):
+
+        with pytest.raises(requests.RequestException):
+            upload_image(filename, transcript_id = 1)
+
+
+              

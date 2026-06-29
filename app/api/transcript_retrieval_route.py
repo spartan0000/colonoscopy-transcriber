@@ -79,7 +79,7 @@ def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
 #upload endpoint called from capture.py which sends images to fastapi server for persistent storage and also metadata gets sent to database
 
 @router.post("/transcripts/{transcript_id}/images")
-def upload_image(transcript_id: int, image: UploadFile = File(...), captured_at: str = Form(...), db: Session = Depends(get_db)):
+def upload_image_api(transcript_id: int, image: UploadFile = File(...), captured_at: str = Form(...), db: Session = Depends(get_db)):
     transcript = db.query(TranscriptModel).filter_by(transcript_id = transcript_id).first()
     if not transcript:
         raise HTTPException(status_code = 404, detail = "Transcript not found")

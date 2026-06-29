@@ -4,8 +4,13 @@ import time
 import pathlib
 import requests
 
+from dotenv import load_dotenv
+load_dotenv()
+
 
 OUTPUT_FOLDER = "captured_images"
+BASE_URL = os.getenv('API_BASE_URL')
+
 
 def save_frame_locally(frame, output_folder, timestamp):
     """save frame to local file system and returns filename"""
@@ -18,8 +23,8 @@ def save_frame_locally(frame, output_folder, timestamp):
 def upload_image(filename, transcript_id):
     with open(filename, 'rb') as f:
         response = requests.post(
-            "/transcripts/{transcript_id}/images",
-            file = {"image": (os.path.basename(filename), f, 'image/png')},
+            f"{BASE_URL}/transcripts/{transcript_id}/images",
+            files = {"image": (os.path.basename(filename), f, 'image/png')},
             data = {"captured_at":time.strftime("%Y%m%d_%H%M%S")})
 
         response.raise_for_status()
