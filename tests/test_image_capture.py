@@ -50,6 +50,8 @@ def test_upload_image_success(tmp_path):
         args, kwargs = mock_post.call_args
 
         assert kwargs['data']['captured_at'] is not None
+        filename_in_request =  kwargs['files']['image'][0]
+        assert "endoscope_20260101_120000" in filename_in_request
 
 def test_upload_images_raises_on_failure(tmp_path):
     filename = str(tmp_path / "endoscope_20260101_120000")
@@ -63,5 +65,21 @@ def test_upload_images_raises_on_failure(tmp_path):
         with pytest.raises(requests.RequestException):
             upload_image(filename, transcript_id = 1)
 
+def test_run_trigger_image_capture_space_then_esc(mock_cap):
+    """space key captures and uploads, esc quits"""
 
+    with patch("capture.image_capture.cv2.VideoCapture", return_value=mock_cap),\
+        patch("capture.image_capture.cv2.imshow"),\
+        patch("capture.image_capture.cv2.waitKey", side_effect =[32,27]),\
+        patch("capture.image_capture.cv2.destroyAllWindows"),\
+        patch("capture.image_capture.save_frame_locally", return_value = "fake_file.png") as mock_save,\
+        patch("capture.image_capture.upload_image", return_value = {'image_id': 'fake-image-123'}) as mock_upload:
+
+        run_trigger_capture(transcript_id=1)
+
+        mock_save.assert_called_once()
+        mock_upload.assert_called_once_with("fake_file.png", 1)
+
+
+        
               
