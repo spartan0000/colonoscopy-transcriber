@@ -3,7 +3,21 @@ from unittest.mock import patch, AsyncMock, MagicMock, mock_open
 
 import numpy as np
 
-from capture.image_capture import run_trigger_capture
+from capture.image_capture import run_trigger_capture, upload_image, save_frame_locally
+
+def test_save_frame_locally(tmp_path, fake_frame):
+    with patch("capture.image_capture.os.makedirs"),\
+            patch("capture.image_capture.cv2.imwrite", return_value = True):
+        filename = save_frame_locally(fake_frame, str(tmp_path), "20260101_120000") #fake frame, tmppath is the output folder, string for the time stamp
+        assert filename.endswith("endoscope_20260101_120000.png")
+
+def test_save_frame_locally_creates_directory(tmp_path, fake_frame):
+    with patch("capture.image_capture.os.makedirs") as mock_makedirs,\
+        patch("capture.image_capture.cv2.imwrite", return_value = True):
+
+        save_frame_locally(fake_frame, str(tmp_path), "20260101_120000")
+
+        mock_makedirs.assert_called_once_with(str(tmp_path), exist_ok = True)
 
 def test_capture_upload_image_space_key(tmp_path):
     fake_frame = np.zeros((480,640,3), dtype = np.uint8)
