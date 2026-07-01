@@ -44,6 +44,15 @@ def start_procedure(db: Session = Depends(get_db)):
 
     return {"transcript_id": fake_transcript.transcript_id}
 
+@router.get("/transcripts/{transcript_id}/draft") #if user has a draft transcript, they can retrieve it here.
+def get_transcript_draft(transcript_id: int, db: Session = Depends(get_db)):
+    transcript = db.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
+    if not transcript:
+        raise HTTPException(status_code=404, detail = "Transcript not found")
+    if transcript.procedure_id is not None:
+        raise HTTPException(status_code=400, detail = "Transcript has already been finalized")
+    return transcript
+
 @router.post("/transcribe/{transcript_id}")
 async def transcribe(transcript_id: int,
                      cecum_reached_time: datetime | None = Form(None), 
