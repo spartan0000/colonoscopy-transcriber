@@ -22,7 +22,8 @@ router = APIRouter(tags=['write_db_pdf'])
 
 @router.post("/write")
 def write_db_pdf(transcript_id: int, full_report: ColonoscopyReportWithMetadataFinal, db: Session = Depends(get_db)):
-    images = db.query(Images).filter_by(transcript_id = transcript_id).all()
+    #get all the images associated with this transcript id from the database sorted by captured at timestamp in ascending order
+    images = db.query(Images).filter_by(transcript_id = transcript_id).order_by(Images.captured_at.asc()).all()
 
 
     logger.info(f"Logging to DB: {full_report.model_dump()}")
@@ -43,12 +44,13 @@ def write_db_pdf(transcript_id: int, full_report: ColonoscopyReportWithMetadataF
         
     except Exception as e:
         print("DB WRITE FAILED", e)
+        logger.error("DB write failed", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Failed to write to database"
         )
     
-        logger.error("DB write failed", exc_info=True)
+        
    
 
 
@@ -79,11 +81,12 @@ def write_db_pdf(transcript_id: int, full_report: ColonoscopyReportWithMetadataF
 
         # )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
+        
         pdf_result = {
             'pdf_url': None
         }
         logger.error("Failed to generate PDF", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
     
     return {
         'procedure_id': procedure.procedure_id,
