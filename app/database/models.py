@@ -196,7 +196,7 @@ class FindingModel(Base):
 
 
 #need table to manage state so that we can track progress of an unfinished report so that user can retrieve and finish it later
-
+#this TranscriptModel is a temporary holding table for the report data before it is finalized and written to Procedures, Polyps, Findings.
 class TranscriptModel(Base):
     __tablename__ = "transcripts"
 

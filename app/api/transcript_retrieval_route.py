@@ -100,3 +100,14 @@ def upload_image_api(transcript_id: int, image: UploadFile = File(...), captured
     db.refresh(image_record)
 
     return {'image_id': image_record.image_id}
+
+#need a recovery endpoint - need to also fix the frontend UI to look for this endpoint by default
+
+@router.get("/transcripts/{transcript_id}/draft")
+def get_transcript_draft(transcript_id: int, db: Session = Depends(get_db)):
+    transcript = db.query(TranscriptModel).filter_by(transcript_id = transcript_id).first()
+    if not transcript:
+        raise HTTPException(status_code=404, detail = "Transcript not found")
+    if transcript.procedure_id is not None:
+        raise HTTPException(status_code=400,detail = "Transcript has been finalized")
+    return transcript

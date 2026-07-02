@@ -62,7 +62,8 @@ Derived from cecum_reached_time and procedure_end_time. Single source of truth. 
 PDF is a legal medical record. LLM extraction is not infallible. Doctor must review and approve before anything becomes the official document.
 
 ## TODO
-- Draft recovery endpoint GET /transcripts/{transcript_id}/draft
+- Draft recovery endpoint GET /transcripts/{transcript_id}/draft - done but see next item
 - Build browser/UI to handle recovery flow - check to see if transcript id exists and offer to retrieve it to finish
+- Images are linked to transcript_id which is the primary key for the temporary data in TranscriptModel: need to decide if we should keep it this way or link them to procedure
 - Auth on /write endpoint to prevent direct URL access
 - Add .order_by(Images.captured_at.asc()) to image query in /write endpoint
