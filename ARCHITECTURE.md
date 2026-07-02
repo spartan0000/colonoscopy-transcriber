@@ -33,7 +33,7 @@ python -m capture/image_capture.py → user enters transcript_id → SPACE key c
 ### 3. Audio Transcription and LLM Extraction
 Browser speech recognition transcribes in real time → procedure ends → browser sends transcribed text + cecum_reached_time + procedure_end_time → POST /transcribe/{transcript_id} → LLM extracts structured data → written to TranscriptModel as draft → full_report returned to browser for verification
 
-### 4. Draft Recovery (TODO - endpoint not yet built)
+### 4. Draft Recovery
 If browser closes mid verification → reopen → GET /transcripts/{transcript_id}/draft → returns TranscriptModel draft if procedure_id is None → doctor continues verification
 
 ### 5. Verification and PDF Generation
@@ -62,8 +62,8 @@ Derived from cecum_reached_time and procedure_end_time. Single source of truth. 
 PDF is a legal medical record. LLM extraction is not infallible. Doctor must review and approve before anything becomes the official document.
 
 ## TODO
-- Draft recovery endpoint GET /transcripts/{transcript_id}/draft - done but see next item
+- Draft recovery endpoint GET /transcripts/{transcript_id}/draft - FIXED but see next item
 - Build browser/UI to handle recovery flow - check to see if transcript id exists and offer to retrieve it to finish
-- Images are linked to transcript_id which is the primary key for the temporary data in TranscriptModel: need to decide if we should keep it this way or link them to procedure
+- Images are linked to transcript_id which is the primary key for the temporary data in TranscriptModel: FIXED - images are now linked to procedure_ID
 - Auth on /write endpoint to prevent direct URL access
-- Add .order_by(Images.captured_at.asc()) to image query in /write endpoint
+- Add .order_by(Images.captured_at.asc()) to image query in /write endpoint FIXED
