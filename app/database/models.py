@@ -228,6 +228,7 @@ class Images(Base):
 
     image_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     transcript_id: Mapped[int] = mapped_column(Integer, ForeignKey("transcripts.transcript_id", ondelete = "CASCADE"), nullable=False)
+    procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey("procedures.procedure_id", ondelete = "CASCADE"), nullable = True) #nullable since we want to create an image record before we have a procedure_id - procedure id created at the end for the final report
     image_path: Mapped[str] = mapped_column(String(200), nullable = False)
     anatomic_location: Mapped[str] = mapped_column(String(200))
     #this is whether the image was auto labelled or manually labelled for use later on

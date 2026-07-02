@@ -22,14 +22,17 @@ router = APIRouter(tags=['write_db_pdf'])
 
 @router.post("/write")
 def write_db_pdf(transcript_id: int, full_report: ColonoscopyReportWithMetadataFinal, db: Session = Depends(get_db)):
-    #get all the images associated with this transcript id from the database sorted by captured at timestamp in ascending order
-    images = db.query(Images).filter_by(transcript_id = transcript_id).order_by(Images.captured_at.asc()).all()
+    
 
 
     logger.info(f"Logging to DB: {full_report.model_dump()}")
     #write to the database here once the data returns from the user
     try:
         procedure = functions.write_transcription_record(db=db, full_report = full_report) #this function includes writing to the database
+        
+        
+        #associate the images with procedure_id in the database since procedure_id is the final record
+        db.query(Images).filter_by(transcript_id=transcript_id).update({"procedure_id": procedure.procedure_id})
 
         #link procedure id to transcript id now that we have a procedure id
         transcript = db.query(TranscriptModel).filter_by(transcript_id = transcript_id).first()
@@ -52,7 +55,8 @@ def write_db_pdf(transcript_id: int, full_report: ColonoscopyReportWithMetadataF
     
         
    
-
+    #get all the images associated with this transcript but search by procedure_id which was connected above from the database sorted by captured at timestamp in ascending order
+    images = db.query(Images).filter_by(procedure_id = procedure.procedure_id).order_by(Images.captured_at.asc()).all()
 
     try:
         #images included in pdf generator
