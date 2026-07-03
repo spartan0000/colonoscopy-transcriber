@@ -67,3 +67,4 @@ PDF is a legal medical record. LLM extraction is not infallible. Doctor must rev
 - Images are linked to transcript_id which is the primary key for the temporary data in TranscriptModel: FIXED - images are now linked to procedure_ID
 - Auth on /write endpoint to prevent direct URL access
 - Add .order_by(Images.captured_at.asc()) to image query in /write endpoint FIXED
+- Add Alembic for migrations
