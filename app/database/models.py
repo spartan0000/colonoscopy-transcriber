@@ -197,18 +197,19 @@ class FindingModel(Base):
 
 #need table to manage state so that we can track progress of an unfinished report so that user can retrieve and finish it later
 #this TranscriptModel is a temporary holding table for the report data before it is finalized and written to Procedures, Polyps, Findings.
+#because this is created before we know any of the data, all the fields are nullable
 class TranscriptModel(Base):
     __tablename__ = "transcripts"
 
     transcript_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=True) #nullable true since we want to allow creation of a transcript before we have all the procedure details, we can update the transcript later with the procedure_id once we have it.
-    patient_id: Mapped[str] = mapped_column(String(50), nullable=False)
-    patient_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    endoscopist_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    patient_dob: Mapped[date] = mapped_column(DateTime, nullable=False)
-    procedure_date: Mapped[datetime] = mapped_column(DateTime())
+    patient_id: Mapped[str] = mapped_column(String(50), nullable=True)
+    patient_name: Mapped[str] = mapped_column(String(100), nullable=True)
+    endoscopist_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    patient_dob: Mapped[date] = mapped_column(DateTime, nullable=True)
+    procedure_date: Mapped[datetime] = mapped_column(DateTime(), nullable=True)
     indication: Mapped[str] = mapped_column(String(100), nullable = True)
-    cecum_reached: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    cecum_reached: Mapped[bool] = mapped_column(Boolean, nullable=True)
     #changed the times to nullable = True, can enforce that they exist at the "finalize" application layer and not here in the database
     cecum_reached_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     procedure_end_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
@@ -217,8 +218,8 @@ class TranscriptModel(Base):
     bbps_transverse: Mapped[int] = mapped_column(Integer, nullable=True)
     bbps_left: Mapped[int] = mapped_column(Integer, nullable=True)
     #bbps total is a computed column in the procedures table so we store the individual segment scores here for now, total computed when report finalized
-    polyps: Mapped[List] = mapped_column(JSONB, nullable=False)
-    findings: Mapped[List] = mapped_column(JSONB, nullable=False)
+    polyps: Mapped[List] = mapped_column(JSONB, nullable=True)
+    findings: Mapped[List] = mapped_column(JSONB, nullable=True)
     status: Mapped[TranscriptStatus] = mapped_column(Enum(TranscriptStatus), default=TranscriptStatus.IN_PROGRESS, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=True)
@@ -230,9 +231,9 @@ class Images(Base):
     transcript_id: Mapped[int] = mapped_column(Integer, ForeignKey("transcripts.transcript_id", ondelete = "CASCADE"), nullable=False)
     procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey("procedures.procedure_id", ondelete = "CASCADE"), nullable = True) #nullable since we want to create an image record before we have a procedure_id - procedure id created at the end for the final report
     image_path: Mapped[str] = mapped_column(String(200), nullable = False)
-    anatomic_location: Mapped[str] = mapped_column(String(200))
+    anatomic_location: Mapped[str] = mapped_column(String(200), nullable = True)
     #this is whether the image was auto labelled or manually labelled for use later on
-    label_source: Mapped[str] = mapped_column(String(100))
+    label_source: Mapped[str] = mapped_column(String(100), nullable = True)
     captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default = func.now(), nullable=False)
 

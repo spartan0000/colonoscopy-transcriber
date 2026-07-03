@@ -1,13 +1,13 @@
 import pytest 
 import sys
 
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi.testclient import TestClient
 from app.main import app
 
-from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata
-from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup
+from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, ColonoscopyReportFinal, ProcedureMetadataFinal, ColonoscopyReportWithMetadataFinal
+from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup, TranscriptModel, Images
 from app.services.functions import map_procedure, map_findings, map_polyp, map_transcription
 
 from app.services import functions
@@ -188,3 +188,65 @@ def test_start_route(client_db):
     assert res.status_code == 200
     data = res.json()
     assert data['transcript_id'] is not None
+
+
+def test_write_endpoint_links_images_to_procedure(client_db, db_session):
+    #create transcript with transcript_id = 1
+    transcript = TranscriptModel(transcript_id = 1)
+    db_session.add(transcript)
+    db_session.commit()
+
+    #create two images associated with the transcript_id = 1 for now
+    image1 = Images(
+        transcript_id = 1,
+        image_path = "path/to/image1.png",
+        captured_at = datetime(2025,1,1,10,0,0)
+
+    )
+
+    image2 = Images(
+        transcript_id = 1,
+        image_path = "path/to/image2.png",
+        captured_at = datetime(2025,1,1,10,0,1)
+    )
+
+    db_session.add_all([image1, image2])
+    db_session.commit()
+
+    #create a colonoscopy report to write to the final endpoint
+    colonoscopy_report = ColonoscopyReportFinal(
+        cecum_reached = True,
+        cecum_reached_time = datetime(2025,1,1,10,0,0).isoformat(),
+        procedure_end_time = datetime(2025,1,1,10,6,0).isoformat(),
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        polyps = [],
+        findings = []
+    )
+
+    metadata = ProcedureMetadataFinal(
+        patient_NHI = "ABC1234",
+        patient_name = "Santa Claus",
+        procedure_date = date(2025,1,1).isoformat(),
+        endoscopist_id = 1,
+        patient_dob = date(1980,1,1).isoformat(),
+        indication = 'unknown'
+    )
+
+    colonoscopy_report_with_metadata = ColonoscopyReportWithMetadataFinal(
+        metadata = metadata,
+        report = colonoscopy_report
+    )
+    response = client_db.post("/write", params = {'transcript_id' : 1} , json = colonoscopy_report_with_metadata.model_dump(mode = "json"))
+
+    assert response.status_code == 200
+
+    #need to get the updated procedure id associated with images
+    db_session.refresh(image1)
+    db_session.refresh(image2)
+
+    procedure_id = response.json()['procedure_id']
+
+    assert image1.procedure_id == procedure_id
+    assert image2.procedure_id == procedure_id
