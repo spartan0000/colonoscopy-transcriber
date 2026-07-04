@@ -250,3 +250,77 @@ def test_write_endpoint_links_images_to_procedure(client_db, db_session):
 
     assert image1.procedure_id == procedure_id
     assert image2.procedure_id == procedure_id
+
+def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session):
+    # create two transcripts
+
+    transcript1 = TranscriptModel(transcript_id = 1)
+    db_session.add(transcript1)
+    db_session.commit()
+
+    transcript2 = TranscriptModel(transcript_id = 2)
+    db_session.add(transcript2)
+    db_session.commit()
+
+    db_session.refresh(transcript1)
+    db_session.refresh(transcript2)
+
+    #create fake images for each transcript and add images to each
+    image1 = Images(
+        transcript_id = 1,
+        image_path = "path/to/image1.png",
+        captured_at = datetime(2025,1,1,10,0,0)
+
+    )
+
+    image2 = Images(
+        transcript_id = 2,
+        image_path = "path/to/image2.png",
+        captured_at = datetime(2025,1,1,10,0,1)
+    )
+
+    db_session.add_all([image1, image2])
+    db_session.commit()
+
+    
+    #create procedure for transcript 1
+
+    #create a colonoscopy report to write to the final endpoint
+    colonoscopy_report = ColonoscopyReportFinal(
+        cecum_reached = True,
+        cecum_reached_time = datetime(2025,1,1,10,0,0).isoformat(),
+        procedure_end_time = datetime(2025,1,1,10,6,0).isoformat(),
+        bbps_right = 3,
+        bbps_transverse = 3,
+        bbps_left = 3,
+        polyps = [],
+        findings = []
+    )
+
+    metadata = ProcedureMetadataFinal(
+        patient_NHI = "ABC1234",
+        patient_name = "Santa Claus",
+        procedure_date = date(2025,1,1).isoformat(),
+        endoscopist_id = 1,
+        patient_dob = date(1980,1,1).isoformat(),
+        indication = 'unknown'
+    )
+
+    colonoscopy_report_with_metadata = ColonoscopyReportWithMetadataFinal(
+        metadata = metadata,
+        report = colonoscopy_report
+    )
+
+    #write the colonoscoyp report to the /write endpoint for transcript 1 which generates a procedure_id and links the images to the procedure_id
+    response = client_db.post("/write", params = {'transcript_id': 1}, json = colonoscopy_report_with_metadata.model_dump(mode = "json"))
+
+    assert response.status_code == 200
+
+    #verify PDF only includes images fromt transript 1 and not 2
+
+    procedure_id = response.json()['procedure_id']
+
+    assert image1.procedure_id == procedure_id
+    assert image2.procedure_id is None #image2 should not be linked to a procedure_id since we haven't sent transcript with transcript_id = 2 to the /write endpoint yet
+
+    
