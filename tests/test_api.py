@@ -323,4 +323,40 @@ def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session):
     assert image1.procedure_id == procedure_id
     assert image2.procedure_id is None #image2 should not be linked to a procedure_id since we haven't sent transcript with transcript_id = 2 to the /write endpoint yet
 
+
+def test_transcript_retrieval_with_images_sorted_by_timestamp(client_db, db_session, full_transcript):
+
     
+
+    image2 = Images(
+        transcript_id = full_transcript.transcript_id,
+        image_path = "path/to/image1.png",
+        captured_at = datetime(2025,1,1,10,0,0) #timestamp is later
+
+    )
+
+    image1 = Images(
+        transcript_id = full_transcript.transcript_id,
+        image_path = "path/to/image2.png",
+        captured_at = datetime(2025,1,1,10,1,0) #timestamp is earlier
+    )
+
+    db_session.add_all([image2, image1]) #adding but out of order by timestamp
+    db_session.commit()
+
+    response = client_db.get(f"/transcripts/{full_transcript.transcript_id}") #retrieving transcript with images
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data['images']) == 2
+
+    #check that the retrieval put them in the proper order by time stamp ascending order
+    assert data['images'][0]['image_path'] == "path/to/image1.png"
+    assert data['images'][1]['image_path'] == "path/to/image2.png"
+
+
+
+
+### need to test draft retrieval

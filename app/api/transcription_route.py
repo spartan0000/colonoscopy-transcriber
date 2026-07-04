@@ -26,7 +26,7 @@ router = APIRouter(tags=['transcription'])
 @router.post("/transcripts/start")
 def start_procedure(db: Session = Depends(get_db)):
     fake_transcript = TranscriptModel(
-        patient_id = 'ABC1234',
+        
         patient_name = 'Santa Claus',
         endoscopist_id = 1,
         patient_dob = date(1945,1,1),
