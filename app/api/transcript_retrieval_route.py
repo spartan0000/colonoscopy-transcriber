@@ -7,7 +7,7 @@ from app.services import functions
 from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
 from app.logger import logger
 
-
+from sqlalchemy import asc
 from sqlalchemy.orm import Session
 
 import uuid
@@ -23,11 +23,11 @@ def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
     print(f"Retrieving transcript with ID: {transcript_id}")
     logger.info(f"Retrieving transcript with ID: {transcript_id}")
     transcript = db.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
-    images = db.query(Images).filter_by(transcript_id = transcript_id).all()
+    
     if not transcript:
         raise HTTPException(status_code=404, detail="Transcript not found")
     
-
+    images = db.query(Images).filter_by(transcript_id = transcript_id).order_by(asc(Images.captured_at)).all() #get all images associated sorted by captured at timestamp
 
     metadata = ProcedureMetadata(
         patient_NHI = transcript.patient_id,

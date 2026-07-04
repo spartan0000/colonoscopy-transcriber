@@ -9,13 +9,13 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from app.database.connection import get_db
-from app.database.models import Base, ProcedureModel, PolypModel, FindingModel
+from app.database.models import Base, ProcedureModel, PolypModel, FindingModel, TranscriptModel, Images
 from app.main import app
 
 from app.database.seed_lookup_tables import seed_endoscopists, seed_polyp_locations
 
 from unittest.mock import MagicMock
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 
 from fastapi.testclient import TestClient
 
@@ -89,6 +89,8 @@ def client_no_db():
 #     yield
 #     Base.metadata.drop_all(test_engine)
 
+
+#procedure transcript for tests
 @pytest.fixture(scope = "function")
 def procedure(db_session):
     proc = ProcedureModel(
@@ -103,6 +105,8 @@ def procedure(db_session):
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
+        polyps = [],
+        findings = []
         
     )
 
@@ -110,6 +114,29 @@ def procedure(db_session):
     db_session.commit()
 
     return proc
+
+#transcript fixture for tests - basically same as procedure
+@pytest.fixture(scope = "function")
+def full_transcript(db_session):
+    transcript = TranscriptModel(
+        patient_id="ABC1234",
+        patient_name="Bob Builder",
+        procedure_date=datetime(2025, 1, 1),
+        endoscopist_id=1,
+        patient_dob=date(1980, 1, 1),
+        indication="screening",
+        cecum_reached=True,
+        cecum_reached_time=datetime(2025, 1, 1, 10, 0),
+        procedure_end_time=datetime(2025, 1, 1, 10, 6),
+        bbps_right=3,
+        bbps_transverse=3,
+        bbps_left=3,
+        polyps=[],
+        findings=[]
+    )
+    db_session.add(transcript)
+    db_session.commit()
+    return transcript
 
 @pytest.fixture(scope = "function", autouse=True)
 def seed_lookup(db_session):
