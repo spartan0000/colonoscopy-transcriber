@@ -138,6 +138,33 @@ def full_transcript(db_session):
     db_session.commit()
     return transcript
 
+@pytest.fixture(scope = "function")
+def transcript_factory(db_session):
+    """factory fixture to create transcripts with different attributes for testign"""
+    def _make_transcript(**kwargs):
+        transcript = TranscriptModel(
+            patient_id="ABC1234",
+            patient_name="Bob Builder",
+            procedure_date=datetime(2025, 1, 1),
+            endoscopist_id=1,
+            patient_dob=date(1980, 1, 1),
+            indication="screening",
+            cecum_reached=True,
+            cecum_reached_time=datetime(2025, 1, 1, 10, 0),
+            procedure_end_time=datetime(2025, 1, 1, 10, 6),
+            bbps_right=3,
+            bbps_transverse=3,
+            bbps_left=3,
+            polyps=[],
+            findings=[],
+            **kwargs
+        )
+        db_session.add(transcript)
+        db_session.commit()
+        return transcript
+    return _make_transcript
+
+
 @pytest.fixture(scope = "function", autouse=True)
 def seed_lookup(db_session):
     seed_polyp_locations(db_session)

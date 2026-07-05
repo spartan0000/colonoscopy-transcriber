@@ -357,6 +357,53 @@ def test_transcript_retrieval_with_images_sorted_by_timestamp(client_db, db_sess
     assert data['images'][1]['image_path'] == "path/to/image2.png"
 
 
+def test_get_transcript_with_no_images(client_db, db_session, full_transcript):
+    
+
+
+    response = client_db.get(f"/transcripts/{full_transcript.transcript_id}")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data['images']) == 0
+
+
+def test_transcript_retrieval_only_gets_images_for_that_transcript(client_db, db_session, transcript_factory):
+
+    transcript1 = transcript_factory()
+    transcript2 = transcript_factory()
+    
+
+    db_session.add_all([transcript1, transcript2])
+    db_session.commit()
+
+    image2 = Images(
+        transcript_id = transcript2.transcript_id,
+        image_path = "path/to/image2.png",
+        captured_at = datetime(2025,1,1,10,0,0) #timestamp is later
+
+    )
+
+    image1 = Images(
+        transcript_id = transcript1.transcript_id,
+        image_path = "path/to/image1.png",
+        captured_at = datetime(2025,1,1,10,1,0) #timestamp is earlier
+    )
+
+    db_session.add_all([image2, image1])
+
+    db_session.commit()
+
+    response = client_db.get(f"/transcripts/{transcript2.transcript_id}")
+
+    assert response.status_code == 200
+
+    images = response.json()['images']
+    assert len(images) == 1 #should only be one image
+
+    assert images[0]['image_path'] == "path/to/image2.png"
 
 
 ### need to test draft retrieval
