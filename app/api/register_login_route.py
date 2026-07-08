@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from pydantic import BaseModel, EmailStr
 
 from datetime import date, datetime, timedelta
@@ -21,6 +21,8 @@ from app.database.models import UserModel
 
 load_dotenv()
 
+router = APIRouter(tags=["register and login"])
+
 class RegisterRequest(BaseModel):
     username: str
     email: EmailStr
@@ -34,7 +36,7 @@ pwd_hasher = PasswordHash.recommended()
 
 SECRET_KEY = os.getenv("JWT_KEY")
 
-@app.post("/register")
+@router.post("/register")
 def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
     stmt = select(UserModel).where((UserModel.username == request.username) | (UserModel.email == request.email))
     existing = db.execute(stmt).scalar_one_or_none()
@@ -62,7 +64,7 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
         'email': new_user.email
     }
 
-@app.post("/login")
+@router.post("/login")
 def login_user(request: LoginRequest, db: Session = Depends(get_db)):
     stmt = select(UserModel).where((UserModel.username == request.username_or_email) | (UserModel.email == request.username_or_email))
     user = db.execute(stmt).scalar_one_or_none()
