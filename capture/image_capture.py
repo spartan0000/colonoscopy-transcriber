@@ -3,6 +3,7 @@ import os
 import time
 import pathlib
 import requests
+import getpass
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -11,6 +12,13 @@ load_dotenv()
 OUTPUT_FOLDER = "captured_images"
 BASE_URL = os.getenv('API_BASE_URL')
 
+def get_token():
+    username = input("Username: ")
+    password = getpass.getpass("Password: ")
+    response = requests.post(f"{BASE_URL}/login", json={'username_or_email': username, 'password': password})
+    response.raise_for_status
+
+    return response.json()['access_token']
 
 def save_frame_locally(frame, output_folder, timestamp):
     """save frame to local file system and returns filename"""
@@ -20,18 +28,19 @@ def save_frame_locally(frame, output_folder, timestamp):
     cv2.imwrite(filename, frame)
     return filename
 
-def upload_image(filename, transcript_id):
+def upload_image(filename, transcript_id, token):
     with open(filename, 'rb') as f:
         response = requests.post(
             f"{BASE_URL}/transcripts/{transcript_id}/images",
             files = {"image": (os.path.basename(filename), f, 'image/png')},
-            data = {"captured_at":time.strftime("%Y%m%d_%H%M%S")})
+            data = {"captured_at":time.strftime("%Y%m%d_%H%M%S")},
+            headers = {"Authorization": f"Bearer {token}"})
 
         response.raise_for_status()
         return response.json()
     
 
-def run_trigger_capture(transcript_id: int, device_index:int = 0):
+def run_trigger_capture(transcript_id: int, token: str, device_index:int = 0):
 
     cap = cv2.VideoCapture(device_index)
 
@@ -57,7 +66,7 @@ def run_trigger_capture(transcript_id: int, device_index:int = 0):
             print(f"[Trigger detected] Saved image: {filename}") #images now saved locally
 
             try: #sending images to fastapi server
-                result = upload_image(filename, transcript_id)
+                result = upload_image(filename, transcript_id, token)
                 print(f"Uploaded: image id: {result['image_id']}")
             except requests.RequestException as e:
                 print(f"Upload failed.  Image saved locally: {e}")
@@ -67,4 +76,5 @@ def run_trigger_capture(transcript_id: int, device_index:int = 0):
 
 if __name__ == "__main__":
     transcript_id = int(input("enter transcript_id: "))
-    run_trigger_capture(transcript_id=transcript_id)
+    token = get_token()
+    run_trigger_capture(transcript_id=transcript_id, token = token)

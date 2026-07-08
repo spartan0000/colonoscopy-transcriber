@@ -103,6 +103,7 @@ class ProcedureModel(Base):
 
     procedure_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     patient_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     patient_dob: Mapped[date] = mapped_column(DateTime, nullable = False)
     patient_name: Mapped[str] = mapped_column(String(100), nullable=False) 
     endoscopist_id: Mapped[int] = mapped_column(Integer, ForeignKey("endoscopist_lookup.endoscopist_id"), nullable=False)
@@ -203,6 +204,7 @@ class TranscriptModel(Base):
 
     transcript_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=True) #nullable true since we want to allow creation of a transcript before we have all the procedure details, we can update the transcript later with the procedure_id once we have it.
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False) 
     patient_id: Mapped[str] = mapped_column(String(50), nullable=True)
     patient_name: Mapped[str] = mapped_column(String(100), nullable=True)
     endoscopist_id: Mapped[int] = mapped_column(Integer, nullable=True)

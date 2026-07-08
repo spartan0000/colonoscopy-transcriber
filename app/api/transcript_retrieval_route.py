@@ -4,8 +4,9 @@ from app.database.models import TranscriptModel, Images
 import pathlib
 from app.services import functions
 
-from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
+from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp, UserModel
 from app.logger import logger
+from app.api.register_login_route import get_current_user
 
 from sqlalchemy import asc
 from sqlalchemy.orm import Session
@@ -18,14 +19,17 @@ from datetime import datetime
 
 router = APIRouter(tags=['transcripts'])
 
-@router.get("/transcripts/{transcript_id}")
-def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
+### Generates a full report including images - 
+@router.get("/transcripts/{transcript_id}/report")
+def get_transcript(transcript_id: int, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
     print(f"Retrieving transcript with ID: {transcript_id}")
     logger.info(f"Retrieving transcript with ID: {transcript_id}")
     transcript = db.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
     
     if not transcript:
         raise HTTPException(status_code=404, detail="Transcript not found")
+    if transcript.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail = "Not authorized")
     
     images = db.query(Images).filter_by(transcript_id = transcript_id).order_by(asc(Images.captured_at)).all() #get all images associated sorted by captured at timestamp
 
@@ -76,13 +80,23 @@ def get_transcript(transcript_id: int, db: Session = Depends(get_db)):
 
 
 
+
+#Some auxiliary endpoints below
+
 #upload endpoint called from capture.py which sends images to fastapi server for persistent storage and also metadata gets sent to database
 
 @router.post("/transcripts/{transcript_id}/images")
-def upload_image_api(transcript_id: int, image: UploadFile = File(...), captured_at: str = Form(...), db: Session = Depends(get_db)):
+def upload_image_api(transcript_id: int, 
+                     image: UploadFile = File(...), 
+                     current_user: UserModel = Depends(get_current_user),
+                     captured_at: str = Form(...), 
+                     db: Session = Depends(get_db)):
     transcript = db.query(TranscriptModel).filter_by(transcript_id = transcript_id).first()
     if not transcript:
         raise HTTPException(status_code = 404, detail = "Transcript not found")
+    if transcript.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail = "Not authorized")
+    
     filename = f"transcript_{transcript_id}_{captured_at}.png"
     filepath = f"./uploads/{filename}"
 
@@ -101,13 +115,18 @@ def upload_image_api(transcript_id: int, image: UploadFile = File(...), captured
 
     return {'image_id': image_record.image_id}
 
-#need a recovery endpoint - need to also fix the frontend UI to look for this endpoint by default
 
-@router.get("/transcripts/{transcript_id}/draft")
-def get_transcript_draft(transcript_id: int, db: Session = Depends(get_db)):
-    transcript = db.query(TranscriptModel).filter_by(transcript_id = transcript_id).first()
+
+#need a recovery endpoint - need to also fix the frontend UI to look for this endpoint by default
+#draft version of a transcript in case the browser closes or something else happens during initial session
+
+@router.get("/transcripts/{transcript_id}/draft") #if user has a draft transcript, they can retrieve it here.
+def get_transcript_draft(transcript_id: int, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
+    transcript = db.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
     if not transcript:
         raise HTTPException(status_code=404, detail = "Transcript not found")
+    if transcript.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
     if transcript.procedure_id is not None:
-        raise HTTPException(status_code=400,detail = "Transcript has been finalized")
+        raise HTTPException(status_code=400, detail = "Transcript has already been finalized")
     return transcript

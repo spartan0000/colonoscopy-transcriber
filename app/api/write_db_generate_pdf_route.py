@@ -4,8 +4,9 @@ from app.database.connection import get_db
 
 from app.services import functions, pdf_generator
 
-from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal
+from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, UserModel
 from app.database.models import Images, TranscriptModel
+from app.api.register_login_route import get_current_user
 
 
 from sqlalchemy.orm import Session
@@ -20,9 +21,19 @@ from app.config import OUTPUT_DIR, API_BASE
 
 router = APIRouter(tags=['write_db_pdf'])
 
+#this is the final endpoint where the user has verified the data is correct and submits it
+#writes to Procedure table which is where the finalized transcript data goes
+
 @router.post("/write")
-def write_db_pdf(transcript_id: int, full_report: ColonoscopyReportWithMetadataFinal, db: Session = Depends(get_db)):
-    
+def write_db_pdf(transcript_id: int, 
+                 full_report: ColonoscopyReportWithMetadataFinal, 
+                 current_user: UserModel = Depends(get_current_user),
+                 db: Session = Depends(get_db)):
+    transcript = db.query(TranscriptModel).filter_by(transcript_id = transcript_id).first()
+    if not transcript:
+        raise HTTPException(status_code=404, detail = "Transcript not found")
+    if transcript.user_id != current_user.id:
+        raise HTTPException(status_code = 403, detail = "Not authorized")
 
 
     logger.info(f"Logging to DB: {full_report.model_dump()}")
