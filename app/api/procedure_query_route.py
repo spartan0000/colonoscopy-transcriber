@@ -1,7 +1,8 @@
 from app.services import functions
 
 from app.models.colonoscopy import ColonoscopyReport
-from app.database.models import ProcedureModel, PolypModel
+from app.database.models import ProcedureModel, PolypModel, UserModel
+from app.api.register_login_route import get_current_user
 
 from sqlalchemy.orm import Session
 
@@ -15,11 +16,14 @@ router = APIRouter(tags = ['procedure_query'])
 #need to decide what other data gets pulled from the db when calling this endpoint
 
 @router.get("/procedures/{procedure_id}/full")
-def get_full_procedure(procedure_id: int, db: Session = Depends(get_db)):
+def get_full_procedure(procedure_id: int, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
     procedure = db.query(ProcedureModel).filter(ProcedureModel.procedure_id == procedure_id).first()
 
     if not procedure:
         raise HTTPException(status_code=404, detail="Procedure not found")
+    
+    if procedure.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail = "Not authorized")
 
     return {
         "procedure_id": procedure_id,

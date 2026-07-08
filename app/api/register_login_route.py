@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends, APIRouter
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, EmailStr
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from pwdlib import PasswordHash
 from pwdlib.exceptions import VerificationError
@@ -20,6 +21,33 @@ from app.database.models import UserModel
 
 
 load_dotenv()
+
+
+##########
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+
+
+#get current user function
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id = int(payload.get("sub"))
+    except jwt.ExpiredSignatureError:
+        print("Token has expired")
+    except jwt.InvalidSignatureError:
+        print("The token is invalid")
+    except jwt.exceptions.PyJWTError as e:
+        print(f"A JWT error as occurred: {e}")
+
+    user = db.get(UserModel, user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    
+    return user
+
+##########
+
+
 
 router = APIRouter(tags=["register and login"])
 
@@ -79,7 +107,7 @@ def login_user(request: LoginRequest, db: Session = Depends(get_db)):
     
     payload = {
         "sub": str(user.id),
-        "exp": datetime.now(datetime.UTC) + timedelta(hours=24)
+        "exp": datetime.now(timezone.utc) + timedelta(hours=24)
     }
 
     token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")

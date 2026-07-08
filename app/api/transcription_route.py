@@ -4,8 +4,9 @@ from app.database.models import TranscriptModel, TranscriptStatus
 
 from app.services import functions
 
-from app.models.colonoscopy import ColonoscopyReport
+from app.models.colonoscopy import ColonoscopyReport, UserModel
 from app.logger import logger
+from app.api.register_login_route import get_current_user
 
 
 from sqlalchemy.orm import Session
@@ -24,9 +25,9 @@ router = APIRouter(tags=['transcription'])
 
 
 @router.post("/transcripts/start")
-def start_procedure(db: Session = Depends(get_db)):
+def start_procedure(current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
     fake_transcript = TranscriptModel(
-        
+        user_id = current_user.id,
         patient_name = 'Santa Claus',
         endoscopist_id = 1,
         patient_dob = date(1945,1,1),
@@ -44,19 +45,18 @@ def start_procedure(db: Session = Depends(get_db)):
 
     return {"transcript_id": fake_transcript.transcript_id}
 
-@router.get("/transcripts/{transcript_id}/draft") #if user has a draft transcript, they can retrieve it here.
-def get_transcript_draft(transcript_id: int, db: Session = Depends(get_db)):
-    transcript = db.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
-    if not transcript:
-        raise HTTPException(status_code=404, detail = "Transcript not found")
-    if transcript.procedure_id is not None:
-        raise HTTPException(status_code=400, detail = "Transcript has already been finalized")
-    return transcript
+
+
+### Receives data from the UI that includes the transcribed text and procedure milestones
+### Functions that receive audio for transcription are commented out as this was the original workflow
+### Can switch back to receiving audio as I'm considering moving to transcription on local machine
+### Rather than browser transcription which isn't that secure and another api call which is slow
 
 @router.post("/transcribe/{transcript_id}")
 async def transcribe(transcript_id: int,
                      cecum_reached_time: datetime | None = Form(None), 
                      procedure_end_time: datetime | None = Form(None), 
+                     current_user: UserModel = Depends(get_current_user),
                      file: UploadFile = File(...),
                      db: Session = Depends(get_db)):
     
@@ -64,6 +64,9 @@ async def transcribe(transcript_id: int,
 
     if not transcript:
         raise HTTPException(status_code = 404, detail = "transcript not found")
+    
+    if transcript.user_id != current_user.id:
+        raise HTTPException(status_code = 403, detail = "Not authorized")
 
     """
     handle transcription of uploaded audio file, extract relevant information, return structured JSON output
