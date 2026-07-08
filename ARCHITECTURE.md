@@ -68,3 +68,4 @@ PDF is a legal medical record. LLM extraction is not infallible. Doctor must rev
 - Auth on /write endpoint to prevent direct URL access
 - Add .order_by(Images.captured_at.asc()) to image query in /write endpoint FIXED
 - Add Alembic for migrations
+- Add auth to each test that hits a protected endpoint

@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from app.database.connection import get_db
-from app.database.models import Base, ProcedureModel, PolypModel, FindingModel, TranscriptModel, Images
+from app.database.models import Base, ProcedureModel, PolypModel, FindingModel, TranscriptModel, Images, UserModel
 from app.main import app
 
 from app.database.seed_lookup_tables import seed_endoscopists, seed_polyp_locations
@@ -18,6 +18,10 @@ from unittest.mock import MagicMock
 from datetime import datetime, date, timedelta
 
 from fastapi.testclient import TestClient
+
+from pwdlib import PasswordHash
+
+pwd_hasher = PasswordHash.recommended()
 
 
 
@@ -192,3 +196,28 @@ def mock_cap(fake_frame):
     cap = MagicMock()
     cap.read.return_value = (True, fake_frame)
     return cap
+
+#create test user for tests
+@pytest.fixture(scope="session")
+def test_user(db_session):
+    user = UserModel(
+        username = "testuser",
+        email = "testuser@test.com",
+        hashed_password = pwd_hasher.hash("testpassword")
+    )
+
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+#create auth header for tests
+@pytest.fixture(scope="session")
+def auth_header(client_db, test_user):
+    response = client_db.post("/login", json = {
+        'username_or_email': 'testuser',
+        'password': 'testpassword'
+    })
+
+    token = response.json()['access_token']
+    return {"Authorization": f"Bearer {token}"}
