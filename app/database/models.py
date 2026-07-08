@@ -150,7 +150,7 @@ class ProcedureModel(Base):
     #specimens: List["Specimen"] = relationship("Specimen", back_populates="procedure", cascade="all, delete-orphan")
     endoscopist_ref: Mapped["EndoscopistLookup"] = relationship("EndoscopistLookup", back_populates="procedures")
     findings: Mapped[List["FindingModel"]] = relationship("FindingModel", back_populates="procedure", cascade="all, delete-orphan")
-    
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="procedures")
 
 class PolypModel(Base):
     __tablename__ = "polyps"
@@ -223,6 +223,8 @@ class TranscriptModel(Base):
     status: Mapped[TranscriptStatus] = mapped_column(Enum(TranscriptStatus), default=TranscriptStatus.IN_PROGRESS, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=True)
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="transcripts")
+
 
 class Images(Base):
     __tablename__ = 'images'
@@ -237,8 +239,17 @@ class Images(Base):
     captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default = func.now(), nullable=False)
 
-    
-    
+
+class UserModel(Base):
+    __tablename__ = 'users'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(200), nullable=False)
+    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    procedures: Mapped[List["ProcedureModel"]] = relationship("ProcedureModel", back_populates="user")
+    transcripts: Mapped[List["TranscriptModel"]] = relationship("TranscriptModel", back_populates="user")
+
 # class Histology(Base):
 #     __tablename__ = 'histology'
 
