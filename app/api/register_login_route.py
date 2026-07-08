@@ -62,3 +62,28 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
         'email': new_user.email
     }
 
+@app.post("/login")
+def login_user(request: LoginRequest, db: Session = Depends(get_db)):
+    stmt = select(UserModel).where((UserModel.username == request.username_or_email) | (UserModel.email == request.username_or_email))
+    user = db.execute(stmt).scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invaid username/email or password")
+    
+    try:
+        pwd_hasher.verify(user.hashed_password, request.password)
+    except VerificationError as e:
+        raise HTTPException(status_code=401, detail="Invalid username/email or password")
+    
+    payload = {
+        "sub": str(user.id),
+        "exp": datetime.now(datetime.UTC) + timedelta(hours=24)
+    }
+
+    token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+    return {
+        'access_token': token,
+        'token_type': 'bearer'
+    }
+
