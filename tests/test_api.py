@@ -192,8 +192,8 @@ def test_start_route(client_db, auth_header):
     data = res.json()
     assert data['transcript_id'] is not None
 
-#####
-def test_write_endpoint_links_images_to_procedure(client_db, db_session):
+
+def test_write_endpoint_links_images_to_procedure(client_db, db_session, auth_header):
     #create transcript with transcript_id = 1
     transcript = TranscriptModel(transcript_id = 1)
     db_session.add(transcript)
@@ -241,7 +241,7 @@ def test_write_endpoint_links_images_to_procedure(client_db, db_session):
         metadata = metadata,
         report = colonoscopy_report
     )
-    response = client_db.post("/write", params = {'transcript_id' : 1} , json = colonoscopy_report_with_metadata.model_dump(mode = "json"))
+    response = client_db.post("/write", params = {'transcript_id' : 1} , json = colonoscopy_report_with_metadata.model_dump(mode = "json"), headers=auth_header)
 
     assert response.status_code == 200
 
@@ -254,7 +254,7 @@ def test_write_endpoint_links_images_to_procedure(client_db, db_session):
     assert image1.procedure_id == procedure_id
     assert image2.procedure_id == procedure_id
 
-def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session):
+def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session, auth_header):
     # create two transcripts
 
     transcript1 = TranscriptModel(transcript_id = 1)
@@ -315,7 +315,7 @@ def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session):
     )
 
     #write the colonoscoyp report to the /write endpoint for transcript 1 which generates a procedure_id and links the images to the procedure_id
-    response = client_db.post("/write", params = {'transcript_id': 1}, json = colonoscopy_report_with_metadata.model_dump(mode = "json"))
+    response = client_db.post("/write", params = {'transcript_id': 1}, json = colonoscopy_report_with_metadata.model_dump(mode = "json"), headers=auth_header)
 
     assert response.status_code == 200
 
@@ -327,7 +327,7 @@ def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session):
     assert image2.procedure_id is None #image2 should not be linked to a procedure_id since we haven't sent transcript with transcript_id = 2 to the /write endpoint yet
 
 
-def test_transcript_retrieval_with_images_sorted_by_timestamp(client_db, db_session, full_transcript):
+def test_transcript_retrieval_with_images_sorted_by_timestamp(client_db, db_session, full_transcript, auth_header):
 
     
 
@@ -347,7 +347,7 @@ def test_transcript_retrieval_with_images_sorted_by_timestamp(client_db, db_sess
     db_session.add_all([image2, image1]) #adding but out of order by timestamp
     db_session.commit()
 
-    response = client_db.get(f"/transcripts/{full_transcript.transcript_id}") #retrieving transcript with images
+    response = client_db.get(f"/transcripts/{full_transcript.transcript_id}", headers=auth_header) #retrieving transcript with images
 
     assert response.status_code == 200
 
@@ -360,11 +360,11 @@ def test_transcript_retrieval_with_images_sorted_by_timestamp(client_db, db_sess
     assert data['images'][1]['image_path'] == "path/to/image2.png"
 
 
-def test_get_transcript_with_no_images(client_db, db_session, full_transcript):
+def test_get_transcript_with_no_images(client_db, db_session, full_transcript, auth_header):
     
 
 
-    response = client_db.get(f"/transcripts/{full_transcript.transcript_id}")
+    response = client_db.get(f"/transcripts/{full_transcript.transcript_id}", headers=auth_header)
 
     assert response.status_code == 200
 
@@ -373,7 +373,7 @@ def test_get_transcript_with_no_images(client_db, db_session, full_transcript):
     assert len(data['images']) == 0
 
 
-def test_transcript_retrieval_only_gets_images_for_that_transcript(client_db, db_session, transcript_factory):
+def test_transcript_retrieval_only_gets_images_for_that_transcript(client_db, db_session, transcript_factory, auth_header):
 
     transcript1 = transcript_factory()
     transcript2 = transcript_factory()
@@ -399,7 +399,7 @@ def test_transcript_retrieval_only_gets_images_for_that_transcript(client_db, db
 
     db_session.commit()
 
-    response = client_db.get(f"/transcripts/{transcript2.transcript_id}")
+    response = client_db.get(f"/transcripts/{transcript2.transcript_id}", headers=auth_header)
 
     assert response.status_code == 200
 
