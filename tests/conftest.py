@@ -96,8 +96,9 @@ def client_no_db():
 
 #procedure transcript for tests
 @pytest.fixture(scope = "function")
-def procedure(db_session):
+def procedure(db_session, test_user):
     proc = ProcedureModel(
+        user_id = test_user.id,
         patient_id = "ABC1234",
         patient_name = "Santa Claus",
         procedure_date = datetime(2025,1,1),
@@ -116,6 +117,7 @@ def procedure(db_session):
 
     db_session.add(proc)
     db_session.commit()
+    db_session.refresh(proc)
 
     return proc
 

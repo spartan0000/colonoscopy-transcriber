@@ -15,10 +15,11 @@ from app.services import functions
 from sqlalchemy.exc import IntegrityError
 
 
-def test_get_procedure(db_session, client_db):
+def test_get_procedure(db_session, client_db, auth_header, test_user):
     
     
     procedure = ProcedureModel(
+        user_id = test_user.id,
         patient_name = 'santa claus',
         patient_id = '123',
         endoscopist_id = 1,
@@ -36,7 +37,7 @@ def test_get_procedure(db_session, client_db):
     db_session.add(procedure)
     db_session.commit()
 
-    response = client_db.get(f"/procedures/{procedure.procedure_id}/full")
+    response = client_db.get(f"/procedures/{procedure.procedure_id}/full", headers=auth_header)
     
 
     assert response.status_code == 200
@@ -47,7 +48,7 @@ def test_get_procedure(db_session, client_db):
     assert data['polyps'] == []
     assert data['findings'] == []
 
-def test_get_procedure_with_polyps(db_session, client_db, procedure):
+def test_get_procedure_with_polyps(db_session, client_db, procedure, auth_header):
     proc = procedure
     db_session.add(proc)
     db_session.commit()
@@ -62,7 +63,7 @@ def test_get_procedure_with_polyps(db_session, client_db, procedure):
     db_session.add(polyp)
     db_session.commit()
 
-    response = client_db.get(f"/procedures/{procedure.procedure_id}/full")
+    response = client_db.get(f"/procedures/{procedure.procedure_id}/full", headers=auth_header)
 
     data = response.json()
 
@@ -70,17 +71,18 @@ def test_get_procedure_with_polyps(db_session, client_db, procedure):
     assert len(data['polyps']) == 1
     assert data['polyps'][0]['size_mm'] == 2.0
 
-def test_get_procedure_not_found(client_db): #test the Procedure not found http exception
-    res = client_db.get(f"/procedures/99999/full")
+def test_get_procedure_not_found(client_db, auth_header): #test the Procedure not found http exception
+    res = client_db.get(f"/procedures/99999/full", headers=auth_header)
 
     assert res.status_code == 404
 
-def test_invalid_procedure_id(client_db):
-    res = client_db.get("/procedures/abc/full") #actually did this error on accident on an earlier test but testing it for real this time as an expected error
+def test_invalid_procedure_id(client_db, auth_header):
+    res = client_db.get("/procedures/abc/full", headers=auth_header) #actually did this error on accident on an earlier test but testing it for real this time as an expected error
     assert res.status_code == 422
 
-def test_polyps_procedure_relationship(client_db, db_session): #making sure that polyps relationship attaches it to the correct procedure
+def test_polyps_procedure_relationship(client_db, test_user, auth_header, db_session): #making sure that polyps relationship attaches it to the correct procedure
     p1 = ProcedureModel(
+        user_id = test_user.id,
         patient_name = 'santa claus',
         patient_id = 'ABC1234',
         endoscopist_id = 1,
@@ -96,6 +98,7 @@ def test_polyps_procedure_relationship(client_db, db_session): #making sure that
     )
 
     p2 = ProcedureModel(
+        user_id = test_user.id,
         patient_name = 'papa smurf',
         patient_id = 'DEF1234',
         endoscopist_id = 1,
@@ -124,13 +127,13 @@ def test_polyps_procedure_relationship(client_db, db_session): #making sure that
     db_session.add(polyp)
     db_session.commit()
 
-    res = client_db.get(f"/procedures/{p2.procedure_id}/full")
+    res = client_db.get(f"/procedures/{p2.procedure_id}/full", headers=auth_header)
 
     data = res.json()
 
     assert data['polyps'] == []
 
-def test_multiple_polyps(db_session, client_db, procedure):
+def test_multiple_polyps(db_session, client_db, procedure, auth_header):
     proc = procedure
 
     polyp1 = PolypModel(
@@ -149,12 +152,12 @@ def test_multiple_polyps(db_session, client_db, procedure):
     db_session.add_all([polyp1,polyp2])
     db_session.commit()
 
-    res = client_db.get(f"/procedures/{proc.procedure_id}/full")
+    res = client_db.get(f"/procedures/{proc.procedure_id}/full", headers=auth_header)
     data = res.json()
 
     assert len(data['polyps']) == 2
 
-def test_get_procedure_with_findings(db_session, client_db, procedure):
+def test_get_procedure_with_findings(db_session, client_db, procedure, auth_header):
     proc = procedure
     db_session.add(proc)
     db_session.commit()
@@ -169,27 +172,27 @@ def test_get_procedure_with_findings(db_session, client_db, procedure):
     db_session.add(finding)
     db_session.commit()
 
-    response = client_db.get(f"/procedures/{procedure.procedure_id}/full")
+    response = client_db.get(f"/procedures/{procedure.procedure_id}/full", headers=auth_header)
 
     data = response.json()
 
     assert response.status_code == 200
     assert len(data['findings']) == 1
 
-def test_transcript_not_found(client_db):
-    res = client_db.get("/transcripts/99999")
+def test_transcript_not_found(client_db, auth_header):
+    res = client_db.get("/transcripts/99999", headers=auth_header)
     assert res.status_code == 404
 
 
 #test that the start route actually generates a transcript_id
 
-def test_start_route(client_db):
-    res = client_db.post("/transcripts/start")
+def test_start_route(client_db, auth_header):
+    res = client_db.post("/transcripts/start", headers=auth_header)
     assert res.status_code == 200
     data = res.json()
     assert data['transcript_id'] is not None
 
-
+#####
 def test_write_endpoint_links_images_to_procedure(client_db, db_session):
     #create transcript with transcript_id = 1
     transcript = TranscriptModel(transcript_id = 1)
