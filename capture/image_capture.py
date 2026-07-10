@@ -16,7 +16,7 @@ def get_token():
     username = input("Username: ")
     password = getpass.getpass("Password: ")
     response = requests.post(f"{BASE_URL}/login", json={'username_or_email': username, 'password': password})
-    response.raise_for_status
+    response.raise_for_status()
 
     return response.json()['access_token']
 

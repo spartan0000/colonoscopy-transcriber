@@ -234,8 +234,9 @@ def map_findings(finding):
         biopsy_taken = finding.biopsy_taken
     )
 
-def map_procedure(report, metadata):
+def map_procedure(report, metadata, user_id):
     return ProcedureModel(
+        user_id = user_id,
         patient_id = metadata.patient_NHI,
         patient_name = metadata.patient_name,
         procedure_date = metadata.procedure_date,
@@ -251,8 +252,9 @@ def map_procedure(report, metadata):
             
     )
 
-def map_transcription(full_report: ColonoscopyReportWithMetadata):
+def map_transcription(full_report: ColonoscopyReportWithMetadata, user_id):
     return TranscriptModel(
+        user_id = user_id, 
         patient_id = full_report.metadata.patient_NHI,
         patient_name = full_report.metadata.patient_name,
         procedure_date = full_report.metadata.procedure_date,
@@ -272,23 +274,23 @@ def map_transcription(full_report: ColonoscopyReportWithMetadata):
     )   
 
 
-def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMetadataFinal):
+def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMetadataFinal, user_id: int):
     metadata = full_report.metadata
     report = full_report.report
-    with db.begin():
+    
         
-        procedure = map_procedure(report, metadata)
-        
-        for polyp in report.polyps:
-            procedure.polyps.append(map_polyp(polyp))
-                
+    procedure = map_procedure(report, metadata, user_id)
+    
+    for polyp in report.polyps:
+        procedure.polyps.append(map_polyp(polyp))
             
-        for finding in report.findings:
-            procedure.findings.append(map_findings(finding))
-                
-
-        db.add(procedure)
         
+    for finding in report.findings:
+        procedure.findings.append(map_findings(finding))
+            
+
+    db.add(procedure)
+    db.flush()
     db.refresh(procedure)
     return procedure
         

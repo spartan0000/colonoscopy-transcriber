@@ -95,7 +95,7 @@ def test_mapping_does_not_mutate(): #test that the mapping function does not mut
     assert p.size_mm == 5.0
     assert p.location == 'ascending_colon'
 
-def test_map_procedure():
+def test_map_procedure(test_user):
     metadata = ProcedureMetadataFinal(
         patient_name = "test patient",
         patient_NHI = "ABC1234",
@@ -113,7 +113,7 @@ def test_map_procedure():
         bbps_left = 3,
     )
 
-    proc = map_procedure(report, metadata)
+    proc = map_procedure(report, metadata, user_id=test_user.id)
 
     assert proc.patient_id == "ABC1234"
     assert proc.patient_name == "test patient"
@@ -121,7 +121,7 @@ def test_map_procedure():
     
 
 
-def test_full_mapping():
+def test_full_mapping(test_user):
     metadata = ProcedureMetadataFinal(
         patient_name = "test patient",
         patient_NHI = "ABC1234",
@@ -147,7 +147,7 @@ def test_full_mapping():
         ]
     )
 
-    procedure = map_procedure(report, metadata)
+    procedure = map_procedure(report, metadata, user_id=test_user.id)
 
     for polyp in report.polyps:
         procedure.polyps.append(map_polyp(polyp))
@@ -156,7 +156,7 @@ def test_full_mapping():
 
 
 
-def test_map_transcript():
+def test_map_transcript(test_user):
     raw = {
         'cecum_reached': True,
         'cecum_reached_time': datetime(2025,1,1,10,0),
@@ -193,7 +193,7 @@ def test_map_transcript():
         report=report
     )
 
-    mapped = map_transcription(full_report)
+    mapped = map_transcription(full_report, user_id=test_user.id)
 
     assert mapped.patient_name == 'bob thebuilder'
     assert mapped.cecum_reached == True

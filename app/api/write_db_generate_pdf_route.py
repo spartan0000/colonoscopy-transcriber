@@ -4,8 +4,8 @@ from app.database.connection import get_db
 
 from app.services import functions, pdf_generator
 
-from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, UserModel
-from app.database.models import Images, TranscriptModel
+from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal
+from app.database.models import Images, TranscriptModel, UserModel
 from app.api.register_login_route import get_current_user
 
 
@@ -39,7 +39,7 @@ def write_db_pdf(transcript_id: int,
     logger.info(f"Logging to DB: {full_report.model_dump()}")
     #write to the database here once the data returns from the user
     try:
-        procedure = functions.write_transcription_record(db=db, full_report = full_report) #this function includes writing to the database
+        procedure = functions.write_transcription_record(db=db, full_report = full_report, user_id=current_user.id) #this function includes writing to the database
         
         
         #associate the images with procedure_id in the database since procedure_id is the final record

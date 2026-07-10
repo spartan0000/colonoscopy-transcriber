@@ -5,7 +5,6 @@ from pydantic import BaseModel, EmailStr
 from datetime import date, datetime, timedelta, timezone
 
 from pwdlib import PasswordHash
-from pwdlib.exceptions import VerificationError
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -15,7 +14,7 @@ import os
 
 import jwt
 
-from app.main import app
+
 from app.database.connection import get_db
 from app.database.models import UserModel
 
@@ -100,9 +99,10 @@ def login_user(request: LoginRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Invaid username/email or password")
     
-    try:
-        pwd_hasher.verify(user.hashed_password, request.password)
-    except VerificationError as e:
+
+    
+    if not pwd_hasher.verify(request.password, user.hashed_password):
+    
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
     
     payload = {
