@@ -123,8 +123,9 @@ def procedure(db_session, test_user):
 
 #transcript fixture for tests - basically same as procedure
 @pytest.fixture(scope = "function")
-def full_transcript(db_session):
+def full_transcript(db_session, test_user):
     transcript = TranscriptModel(
+        user_id = test_user.id,
         patient_id="ABC1234",
         patient_name="Bob Builder",
         procedure_date=datetime(2025, 1, 1),
@@ -145,10 +146,11 @@ def full_transcript(db_session):
     return transcript
 
 @pytest.fixture(scope = "function")
-def transcript_factory(db_session):
+def transcript_factory(db_session, test_user):
     """factory fixture to create transcripts with different attributes for testign"""
     def _make_transcript(**kwargs):
         transcript = TranscriptModel(
+            user_id = test_user.id,
             patient_id="ABC1234",
             patient_name="Bob Builder",
             procedure_date=datetime(2025, 1, 1),
@@ -200,7 +202,7 @@ def mock_cap(fake_frame):
     return cap
 
 #create test user for tests
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def test_user(db_session):
     user = UserModel(
         username = "testuser",
@@ -214,7 +216,7 @@ def test_user(db_session):
     return user
 
 #create auth header for tests
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def auth_header(client_db, test_user):
     response = client_db.post("/login", json = {
         'username_or_email': 'testuser',

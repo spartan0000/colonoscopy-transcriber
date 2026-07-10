@@ -1,10 +1,10 @@
 from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
 from app.database.connection import get_db
-from app.database.models import TranscriptModel, Images
+from app.database.models import TranscriptModel, Images, UserModel
 import pathlib
 from app.services import functions
 
-from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp, UserModel
+from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
 from app.logger import logger
 from app.api.register_login_route import get_current_user
 

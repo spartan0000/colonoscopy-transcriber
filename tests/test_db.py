@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 
 
 
-def test_end_to_end(db_session):
+def test_end_to_end(db_session, test_user):
     #mock LLM outputs
     today = datetime.today()
     mock_transcription = {
@@ -74,7 +74,7 @@ def test_end_to_end(db_session):
 
     #write to db
 
-    functions.write_transcription_record(db_session, full_report)
+    functions.write_transcription_record(db_session, full_report, user_id=test_user.id)
 
     procedure = db_session.query(ProcedureModel).filter_by(patient_id = "ABCD1234").first()
 
@@ -162,8 +162,9 @@ def test_withdrawal_time_computed(db_session, procedure):
 
     assert proc1.withdrawal_time == 6.0
 
-def test_withdrawal_time_cecum_not_reached(db_session, procedure):
+def test_withdrawal_time_cecum_not_reached(db_session, test_user):
     proc1 = ProcedureModel(
+        user_id = test_user.id,
         patient_id = "ABC1234",
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
@@ -183,8 +184,9 @@ def test_withdrawal_time_cecum_not_reached(db_session, procedure):
 
     assert proc1.withdrawal_time is None
 
-def test_times_wrong_order(db_session):
+def test_times_wrong_order(db_session, test_user):
     proc1 = ProcedureModel(
+        user_id = test_user.id,
         patient_id = "ABC1234",
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
@@ -204,8 +206,9 @@ def test_times_wrong_order(db_session):
     
     assert "check_time_order" in str(e.value)
 
-def test_unique_patient_date(db_session):
+def test_unique_patient_date(db_session, test_user):
     proc1 = ProcedureModel(
+        user_id = test_user.id,
         patient_id = "ABC1234",
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
@@ -221,6 +224,7 @@ def test_unique_patient_date(db_session):
     )
 
     proc2 = ProcedureModel(
+        user_id = test_user.id,
         patient_id = "ABC1234",
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
@@ -252,8 +256,9 @@ def test_bbps_computed_column(db_session, procedure): #does the bbps_total compu
     r = db_session.query(ProcedureModel).first()
     assert r.bbps_total == 9
 
-def test_bbps_null_value(db_session): #does a null value for a segment result in null for the total (expected behavior)
+def test_bbps_null_value(db_session, test_user): #does a null value for a segment result in null for the total (expected behavior)
     proc1 = ProcedureModel(
+        user_id = test_user.id,
         patient_id = "ABC1234",
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
@@ -276,8 +281,9 @@ def test_bbps_null_value(db_session): #does a null value for a segment result in
     assert r.bbps_total == None
     assert r.bbps_right == None
 
-def test_bbps_insert_update_total(db_session): #does the null bbps_total value update once you enter a valid value for a segment
+def test_bbps_insert_update_total(db_session, test_user): #does the null bbps_total value update once you enter a valid value for a segment
     proc1 = ProcedureModel(
+        user_id = test_user.id,
         patient_id = "ABC1234",
         patient_name = "santa claus",
         procedure_date = datetime(2024,1,1),
@@ -320,7 +326,7 @@ def test_bbps_invalid_value(db_session):
     with pytest.raises(IntegrityError) as e:
         db_session.commit()
 
-def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the database in correct format?
+def test_full_pipeline(db_session, test_user): #does raw JSON (from the LLM) end up in the database in correct format?
     raw = {
         'cecum_reached': True,
         'cecum_reached_time': datetime(2025,1,1,10,0),
@@ -351,7 +357,7 @@ def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the 
     
     metadata = ProcedureMetadataFinal(**raw_metadata)
     report = ColonoscopyReportFinal(**raw)
-    procedure = map_procedure(report, metadata)
+    procedure = map_procedure(report, metadata, user_id=test_user.id)
     for polyp in report.polyps:
         procedure.polyps.append(map_polyp(polyp))
 
@@ -363,7 +369,7 @@ def test_full_pipeline(db_session): #does raw JSON (from the LLM) end up in the 
     assert len(saved.polyps) == 1
     assert saved.polyps[0].size_mm == 5.0
 
-def test_transcript_creation_retrieval(db_session, client_db):
+def test_transcript_creation_retrieval(db_session, client_db, auth_header, test_user):
     raw = {
         'cecum_reached': True,
         'cecum_reached_time': datetime(2025,1,1,10,0),
@@ -400,19 +406,19 @@ def test_transcript_creation_retrieval(db_session, client_db):
         report = report
     )
 
-    transcript = functions.map_transcription(full_report)
+    transcript = functions.map_transcription(full_report, user_id=test_user.id)
     db_session.add(transcript)
     db_session.commit()
 
     print(f"transcript ID: {transcript.transcript_id}")
-    response = client_db.get(f"/transcripts/{transcript.transcript_id}")
+    response = client_db.get(f"/transcripts/{transcript.transcript_id}/report", headers=auth_header)
 
     assert response.status_code == 200
     data = response.json()
 
     assert data['report']['metadata']['patient_name'] == 'bob thebuilder'
 
-def test_full_pipeline_with_api_endpoint(db_session, client_db): #does raw JSON (from the LLM) end up in the database in correct format and can we retrieve it with the api endpoint
+def test_full_pipeline_with_api_endpoint(db_session, client_db, auth_header, test_user): #does raw JSON (from the LLM) end up in the database in correct format and can we retrieve it with the api endpoint
     raw = {
         'cecum_reached': True,
         'cecum_reached_time': datetime(2025,1,1,10,0),
@@ -445,7 +451,7 @@ def test_full_pipeline_with_api_endpoint(db_session, client_db): #does raw JSON 
     report = ColonoscopyReportFinal(**raw)
 
     #persist in the database
-    procedure = map_procedure(report, metadata)
+    procedure = map_procedure(report, metadata, user_id=test_user.id)
     for polyp in report.polyps:
         procedure.polyps.append(map_polyp(polyp))
 
@@ -453,7 +459,7 @@ def test_full_pipeline_with_api_endpoint(db_session, client_db): #does raw JSON 
     db_session.commit()
 
     #retrieve data via api endpoint
-    response = client_db.get(f"/procedures/{procedure.procedure_id}/full")
+    response = client_db.get(f"/procedures/{procedure.procedure_id}/full", headers=auth_header)
     
     data = response.json()
     print(data)

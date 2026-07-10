@@ -40,7 +40,7 @@ def test_upload_image_success(tmp_path):
     with patch("capture.image_capture.requests.post", return_value = mock_response) as mock_post,\
         patch("builtins.open", mock_open(read_data = b'fake_image_bytes')):
 
-        result = upload_image(filename, transcript_id = 1) #the requested endpoint returns image_id
+        result = upload_image(filename, transcript_id = 1, token='fake_token') #the requested endpoint returns image_id
 
         assert result['image_id'] == 'test-image-123'
 
@@ -64,10 +64,10 @@ def test_run_trigger_image_capture_space_then_esc(mock_cap):
         patch("capture.image_capture.save_frame_locally", return_value = "fake_file.png") as mock_save,\
         patch("capture.image_capture.upload_image", return_value = {'image_id': 'fake-image-123'}) as mock_upload:
 
-        run_trigger_capture(transcript_id=1)
+        run_trigger_capture(transcript_id=1, token='fake_token')
 
         mock_save.assert_called_once()
-        mock_upload.assert_called_once_with("fake_file.png", 1)
+        mock_upload.assert_called_once_with("fake_file.png", 1, 'fake_token')
 
 def test_run_trigger_capture_esc_only(mock_cap):
     """test that escape immediately exits the image capture function"""
@@ -79,7 +79,7 @@ def test_run_trigger_capture_esc_only(mock_cap):
         patch("capture.image_capture.save_frame_locally") as mock_save,\
         patch("capture.image_capture.upload_image") as mock_upload:
         
-        run_trigger_capture(transcript_id = 1)
+        run_trigger_capture(transcript_id = 1, token='fake_token')
 
         mock_save.assert_not_called()
         mock_upload.assert_not_called()
@@ -94,7 +94,7 @@ def test_upload_images_raises_on_failure(tmp_path):
         patch('builtins.open', mock_open(read_data=b'fake_image_bytes')):
 
         with pytest.raises(requests.RequestException):
-            upload_image(filename, transcript_id = 1) #upload image doesn't have a try/except around it so this exception will trigger pytest.raises
+            upload_image(filename, transcript_id = 1, token='fake_token') #upload image doesn't have a try/except around it so this exception will trigger pytest.raises
 
 def test_run_trigger_capture_upload_failure(mock_cap):
     """upload failure exception is caught and the loop continues"""
@@ -106,4 +106,4 @@ def test_run_trigger_capture_upload_failure(mock_cap):
         patch("capture.image_capture.save_frame_locally", return_value = 'fake_image.png') as mock_save,\
         patch("capture.image_capture.upload_image", side_effect = requests.RequestException("Failure!")) as mock_upload:
 
-        run_trigger_capture(transcript_id=1) #should not raise because upload_image catches it
+        run_trigger_capture(transcript_id=1, token='fake_token') #should not raise because upload_image catches it
