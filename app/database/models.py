@@ -77,7 +77,7 @@ class EndoscopistLookup(Base):
     procedures: Mapped[List["ProcedureModel"]] = relationship("ProcedureModel", back_populates="endoscopist_ref") #this is a one to many relationship with the Procedure table
 
 ###Main Tables
-class ProcedureModel(Base):
+class ProcedureModel(Base): #table for the finalized procedure transcript
     __tablename__ = "procedures"
     __table_args__ = (
         UniqueConstraint("patient_id", "procedure_date", name="uq_patient_procedure_date"),
@@ -143,7 +143,7 @@ class ProcedureModel(Base):
 
     entered_by: Mapped[str] = mapped_column(String(100), nullable=True)
     source_system: Mapped[str] = mapped_column(String(100), nullable=True)
-
+    status: Mapped[TranscriptStatus] = mapped_column(Enum(TranscriptStatus), default=TranscriptStatus.FINALIZED, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
