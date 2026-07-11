@@ -129,4 +129,21 @@ def get_transcript_draft(transcript_id: int, current_user: UserModel = Depends(g
         raise HTTPException(status_code=403, detail="Not authorized")
     if transcript.procedure_id is not None:
         raise HTTPException(status_code=400, detail = "Transcript has already been finalized")
-    return transcript
+    return {
+        'transcript_id': transcript.transcript_id,
+        'status': transcript.status,
+        'patient_name': transcript.patient_name,
+        'patient_dob': transcript.patient_dob,
+        'patient_id': transcript.patient_id,
+        'procedure_date': transcript.procedure_date,
+        'endoscopist_id': transcript.endoscopist_id,
+        'indication': transcript.indication,
+        'cecum_reached': transcript.cecum_reached,
+        'cecum_reached_time': transcript.cecum_reached_time,
+        'procedure_end_time': transcript.procedure_end_time,
+        'bbps_right': transcript.bbps_right,
+        'bbps_transverse': transcript.bbps_transverse,
+        'bbps_left': transcript.bbps_left,
+        'polyps': transcript.polyps,
+        'findings': transcript.findings,
+    }
