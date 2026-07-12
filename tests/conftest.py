@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from app.database.connection import get_db
-from app.database.models import Base, ProcedureModel, PolypModel, FindingModel, TranscriptModel, Images, UserModel
+from app.database.models import Base, ProcedureModel, PolypModel, FindingModel, TranscriptModel, Images, UserModel, TranscriptStatus
 from app.main import app
 
 from app.database.seed_lookup_tables import seed_endoscopists, seed_polyp_locations
@@ -102,6 +102,7 @@ def procedure(db_session, test_user):
         patient_id = "ABC1234",
         patient_name = "Santa Claus",
         procedure_date = datetime(2025,1,1),
+        procedure_id = 999,
         endoscopist_id = 1,
         patient_dob = datetime(1980,1,1),
         cecum_reached = True,
@@ -126,6 +127,7 @@ def procedure(db_session, test_user):
 def full_transcript(db_session, test_user):
     transcript = TranscriptModel(
         user_id = test_user.id,
+        status = TranscriptStatus.IN_PROGRESS,
         patient_id="ABC1234",
         patient_name="Bob Builder",
         procedure_date=datetime(2025, 1, 1),
