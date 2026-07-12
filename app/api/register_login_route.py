@@ -20,7 +20,8 @@ from app.database.models import UserModel
 
 
 load_dotenv()
-
+SECRET_KEY = os.getenv("JWT_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
 
 ##########
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
@@ -29,7 +30,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 #get current user function
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = int(payload.get("sub"))
     except jwt.ExpiredSignatureError:
         print("Token has expired")
@@ -61,7 +62,7 @@ class LoginRequest(BaseModel):
 
 pwd_hasher = PasswordHash.recommended()
 
-SECRET_KEY = os.getenv("JWT_KEY")
+
 
 @router.post("/register")
 def register_user(request: RegisterRequest, db: Session = Depends(get_db)):

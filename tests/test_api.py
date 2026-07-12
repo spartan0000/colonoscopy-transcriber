@@ -7,13 +7,16 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetadata, ProcedureMetadata, ColonoscopyReportFinal, ProcedureMetadataFinal, ColonoscopyReportWithMetadataFinal
-from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup, TranscriptModel, Images
+from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup, TranscriptModel, Images, TranscriptStatus, UserModel
 from app.services.functions import map_procedure, map_findings, map_polyp, map_transcription
 
 from app.services import functions
 
 from sqlalchemy.exc import IntegrityError
 
+from pwdlib import PasswordHash
+
+pwd_hasher = PasswordHash.recommended()
 
 def test_get_procedure(db_session, client_db, auth_header, test_user):
     
@@ -409,4 +412,105 @@ def test_transcript_retrieval_only_gets_images_for_that_transcript(client_db, db
     assert images[0]['image_path'] == "path/to/image2.png"
 
 
-### need to test draft retrieval
+### need to test draft retrieval endpoint
+
+def test_get_draft_transcript(client_db, db_session, auth_header, full_transcript):
+    draft = full_transcript
+
+    db_session.add(draft)
+    db_session.commit()
+    db_session.refresh(draft)
+
+    response = client_db.get(f"/transcripts/{draft.transcript_id}/draft", headers=auth_header)
+
+    assert response.status_code == 200
+    assert response.json()['status'] == TranscriptStatus.IN_PROGRESS.value
+
+def test_try_to_get_draft_finalized_procedure(client_db, db_session, auth_header, test_user, procedure):
+    draft = TranscriptModel(
+        user_id = test_user.id,
+        status = TranscriptStatus.IN_PROGRESS,
+        procedure_id = procedure.procedure_id, #uses the test procedure with procedure_id already assigned, fits the FK relation between transcript and procedure
+        polyps = [],
+        findings = []
+    )
+
+    db_session.add(draft)
+    db_session.commit()
+    db_session.refresh(draft)
+
+    response = client_db.get(f"/transcripts/{draft.transcript_id}/draft", headers=auth_header)
+
+    assert response.status_code == 400
+
+def test_draft_not_found(client_db, auth_header):
+    response = client_db.get(f"/transcripts/9999/draft", headers=auth_header)
+    assert response.status_code == 404 
+
+def test_get_draft_for_wrong_user(client_db, auth_header, db_session): #actually tests that the user auth prevents one user from seeing transcripts for a different user
+    other_user = UserModel(
+        username = 'otheruser',
+        email = 'otheruser@other.co',
+        hashed_password = pwd_hasher.hash('otherpassword')
+    )
+
+    db_session.add(other_user)
+    db_session.commit()
+
+    transcript = TranscriptModel(
+        user_id = other_user.id,
+        status = TranscriptStatus.IN_PROGRESS,
+        patient_id="ABC1234",
+        patient_name="Bob Builder",
+        procedure_date=datetime(2025, 1, 1),
+        endoscopist_id=1,
+        patient_dob=date(1980, 1, 1),
+        indication="screening",
+        cecum_reached=True,
+        cecum_reached_time=datetime(2025, 1, 1, 10, 0),
+        procedure_end_time=datetime(2025, 1, 1, 10, 6),
+        bbps_right=3,
+        bbps_transverse=3,
+        bbps_left=3,
+        polyps=[],
+        findings=[]
+    )
+
+    db_session.add(transcript)
+    db_session.commit()
+    db_session.refresh(transcript)
+
+    #the transcript belongs to "other_user".  now try to get it using the auth_header which has the token for test_user
+
+    response = client_db.get(f"/transcripts/{transcript.transcript_id}/draft", headers=auth_header)
+
+    assert response.status_code == 403
+
+# test the registration endpoint
+
+def test_new_registration(client_db):
+    response = client_db.post("/register", json={
+        'username': 'testuser',
+        'email': 'testuser@test.com',
+        'password': 'testpassword'
+    })
+
+    assert response.status_code == 200
+    
+def test_duplicate_registration_username(client_db, test_user): 
+    response = client_db.post("/register", json = {
+        'username': 'testuser', #same as test_user
+        'email': 'testusernumber2@test.com', #different from test user
+        'password':'testpassword'
+    })
+
+    assert response.status_code == 409
+
+def test_duplicate_registration_email(client_db, test_user):
+    response = client_db.post("/register", json={
+        'username': 'differentuser', #different from test_user
+        'email': 'testuser@test.com', #same as test_user
+        'password': 'testpassword'
+    })
+
+    assert response.status_code == 409
