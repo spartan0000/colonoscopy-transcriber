@@ -6,6 +6,7 @@ from app.services import functions
 
 from app.models.colonoscopy import ColonoscopyReportWithTime, ColonoscopyReportWithMetadata, ProcedureMetadata, Finding, Polyp
 from app.logger import logger
+from app.config import UPLOADS_DIR
 from app.api.register_login_route import get_current_user
 
 from sqlalchemy import asc
@@ -98,13 +99,13 @@ def upload_image_api(transcript_id: int,
         raise HTTPException(status_code=403, detail = "Not authorized")
     
     filename = f"transcript_{transcript_id}_{captured_at}.png"
-    filepath = f"./uploads/{filename}"
+    filepath = UPLOADS_DIR / filename
 
     with open(filepath, "wb") as f:
         f.write(image.file.read())
     image_record = Images(
         transcript_id = transcript_id,
-        image_path = filepath,
+        image_path = str(filepath),
         captured_at = captured_at,
         anatomic_location = None
     )
