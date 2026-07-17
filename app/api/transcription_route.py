@@ -135,7 +135,7 @@ async def transcribe(transcript_id: int,
     logger.info(f"Full report: {full_report}")
     
     try:
-        updated = functions.map_transcription(full_report)
+        updated = functions.map_transcription(full_report, user_id=current_user.id)
 
         transcript.patient_id = updated.patient_id
         transcript.patient_name = updated.patient_name
