@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
+from pydantic import BaseModel
 from app.database.connection import get_db
 from app.database.models import TranscriptModel, TranscriptStatus, UserModel
 
@@ -22,15 +23,22 @@ def get_draft_id():
 
 router = APIRouter(tags=['transcription'])
 
-
+class StartProcedureRequest(BaseModel):
+    patient_name: str
+    patient_dob: date
+    patient_nhi: str
 
 @router.post("/transcripts/start")
-def start_procedure(current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
-    fake_transcript = TranscriptModel(
+def start_procedure(start : StartProcedureRequest,
+                    current_user: UserModel = Depends(get_current_user), 
+                    db: Session = Depends(get_db), 
+                    ):
+    new_transcript = TranscriptModel(
         user_id = current_user.id,
-        patient_name = 'Santa Claus',
+        patient_name = start.patient_name,
         endoscopist_id = 1,
-        patient_dob = date(1945,1,1),
+        patient_dob = start.patient_dob,
+        patient_id = start.patient_nhi,
         procedure_date = date.today(),
         cecum_reached = False,
         polyps = [],
@@ -39,11 +47,11 @@ def start_procedure(current_user: UserModel = Depends(get_current_user), db: Ses
         created_at = datetime.now()
 
 )
-    db.add(fake_transcript)
+    db.add(new_transcript)
     db.commit()
-    db.refresh(fake_transcript)
+    db.refresh(new_transcript)
 
-    return {"transcript_id": fake_transcript.transcript_id}
+    return {"transcript_id": new_transcript.transcript_id}
 
 
 
@@ -130,7 +138,7 @@ async def transcribe(transcript_id: int,
 
     logger.info(f"Added time stamps: {extracted_data_with_timestamps}")
 
-    full_report = functions.generate_fake_data(extracted_data_with_timestamps) #fake data for now, replace with real metadata extraction
+    full_report = functions.build_report(transcript, extracted_data_with_timestamps) #fake data for now, replace with real metadata extraction
 
     logger.info(f"Full report: {full_report}")
     
