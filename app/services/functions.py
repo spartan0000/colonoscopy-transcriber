@@ -13,7 +13,7 @@ from pydantic import BaseModel
 import random
 from datetime import date, datetime, timedelta
 
-from fastapi import UploadFile
+from fastapi import UploadFile, HTTPException
 from io import BytesIO
 
 from sqlalchemy.orm import Session
@@ -187,30 +187,64 @@ def add_time_stamps(llm: ColonoscopyReport, cecum_reached_time, procedure_end_ti
 
 ###function to generate fake metadata for testing purposes. Eventually, will need to source the metadata from primary data source.  
 
-def generate_fake_data(transcribed_report):
-    names = ['Bob Marley', 'Ben Franklin', 'Stevie Nicks', 'Santa Claus']
-    nhis = ['ABC1234', 'ABC7890', 'XYZ4343', 'LLL1111']
-    dobs = [
-        date(1945,1,1),
-        date(1950,1,1),
-        date(1955,1,1),
-        date(1920,1,1)
-    ]
+# def generate_fake_data(transcribed_report):
+#     names = ['Bob Marley', 'Ben Franklin', 'Stevie Nicks', 'Santa Claus']
+#     nhis = ['ABC1234', 'ABC7890', 'XYZ4343', 'LLL1111']
+#     dobs = [
+#         date(1945,1,1),
+#         date(1950,1,1),
+#         date(1955,1,1),
+#         date(1920,1,1)
+#     ]
 
+#     metadata = ProcedureMetadata(
+#         patient_name = random.choice(names),
+#         patient_NHI = random.choice(nhis),
+#         procedure_date = date.today() - timedelta(days = random.randint(0,60)),
+#         patient_dob = random.choice(dobs),
+#         endoscopist_id = random.randint(1,4)
+#     )
+
+#     full_report = ColonoscopyReportWithMetadata(
+        
+#         metadata = metadata,
+#         report = transcribed_report
+#     )
+#     return full_report
+
+### This should replace the random metadata function above - the /start endpoint now requires entering patient data
+### So this gets pulled based on the transcript_id and populates ProcedureMetadata instead of random names/data
+
+def get_metadata(db: Session, transcript_id: str):
+    transcript = db.query(TranscriptModel).filter(TranscriptModel.transcript_id == transcript_id).first()
+    if transcript is None:
+        raise HTTPException(status_code=404, detail= "File not found")
+    return transcript
+
+# Turns out we don't even need the get_metadata function since the route that uses this already does a 
+# DB query anyway.  the build_report function below is used and takes the transcript from the existing db query
+# in the transcribe route.
+
+
+# Takes the above metadata and creates the Pydantic model - separated these two functions out
+def build_report(transcript: TranscriptModel, transcribed_report) -> ColonoscopyReportWithMetadata:
     metadata = ProcedureMetadata(
-        patient_name = random.choice(names),
-        patient_NHI = random.choice(nhis),
-        procedure_date = date.today() - timedelta(days = random.randint(0,60)),
-        patient_dob = random.choice(dobs),
-        endoscopist_id = random.randint(1,4)
+        patient_name = transcript.patient_name,
+        patient_dob = transcript.patient_dob,
+        patient_NHI = transcript.patient_id,
+        procedure_date = transcript.procedure_date,
+        endoscopist_id = transcript.endoscopist_id,
+
     )
 
     full_report = ColonoscopyReportWithMetadata(
-        
         metadata = metadata,
         report = transcribed_report
     )
+
     return full_report
+
+
 
 ###maping functions to convert from pydantic models to sqlalchemy models for writing to the database.
 
@@ -295,11 +329,12 @@ def write_transcription_record(db: Session, full_report: ColonoscopyReportWithMe
     return procedure
         
 
-async def final_transcription(upload_file: UploadFile, db: Session):
+async def final_transcription(upload_file: UploadFile, db: Session, transcript_id: str):
     clean_data = transcribe_get_timestamps(upload_file)
     output = extract_json(clean_data)
-    full_report = generate_fake_data(output)
-    write_transcription_record(db = db, full_report = full_report)
+    transcript = get_metadata(db, transcript_id)
+    full_report = build_report(transcript, output)
+    write_transcription_record(db = db, full_report = full_report, user_id = transcript.user_id)
 
     return full_report
 
