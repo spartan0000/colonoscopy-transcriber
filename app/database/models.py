@@ -1,8 +1,9 @@
 from sqlalchemy import func, Index, CheckConstraint, UniqueConstraint, Column, Integer, String, Float, ForeignKey, Boolean, DateTime, Text, Enum, Computed
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 import enum
+import uuid
 from typing import List, Optional
 from datetime import datetime, date
 
@@ -202,7 +203,7 @@ class FindingModel(Base):
 class TranscriptModel(Base):
     __tablename__ = "transcripts"
 
-    transcript_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    transcript_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey("procedures.procedure_id", ondelete="CASCADE"), nullable=True) #nullable true since we want to allow creation of a transcript before we have all the procedure details, we can update the transcript later with the procedure_id once we have it.
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False) 
     patient_id: Mapped[str] = mapped_column(String(50), nullable=True)
@@ -232,7 +233,7 @@ class Images(Base):
     __tablename__ = 'images'
 
     image_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    transcript_id: Mapped[int] = mapped_column(Integer, ForeignKey("transcripts.transcript_id", ondelete = "CASCADE"), nullable=False)
+    transcript_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("transcripts.transcript_id", ondelete = "CASCADE"), nullable=False)
     procedure_id: Mapped[int] = mapped_column(Integer, ForeignKey("procedures.procedure_id", ondelete = "CASCADE"), nullable = True) #nullable since we want to create an image record before we have a procedure_id - procedure id created at the end for the final report
     image_path: Mapped[str] = mapped_column(String(200), nullable = False)
     anatomic_location: Mapped[str] = mapped_column(String(200), nullable = True)

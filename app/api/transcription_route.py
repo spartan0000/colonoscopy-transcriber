@@ -61,7 +61,7 @@ def start_procedure(start : StartProcedureRequest,
 ### Rather than browser transcription which isn't that secure and another api call which is slow
 
 @router.post("/transcribe/{transcript_id}")
-async def transcribe(transcript_id: int,
+async def transcribe(transcript_id: uuid.UUID,
                      cecum_reached_time: datetime | None = Form(None), 
                      procedure_end_time: datetime | None = Form(None), 
                      current_user: UserModel = Depends(get_current_user),

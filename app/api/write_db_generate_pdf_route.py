@@ -8,7 +8,7 @@ from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWith
 from app.database.models import Images, TranscriptModel, UserModel
 from app.api.register_login_route import get_current_user
 
-
+import uuid
 from sqlalchemy.orm import Session
 
 from pathlib import Path
@@ -25,7 +25,7 @@ router = APIRouter(tags=['write_db_pdf'])
 #writes to Procedure table which is where the finalized transcript data goes
 
 @router.post("/write")
-def write_db_pdf(transcript_id: int, 
+def write_db_pdf(transcript_id: uuid.UUID, 
                  full_report: ColonoscopyReportWithMetadataFinal, 
                  current_user: UserModel = Depends(get_current_user),
                  db: Session = Depends(get_db)):

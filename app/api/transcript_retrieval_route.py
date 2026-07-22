@@ -22,7 +22,7 @@ router = APIRouter(tags=['transcripts'])
 
 ### Generates a full report including images - 
 @router.get("/transcripts/{transcript_id}/report")
-def get_transcript(transcript_id: int, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_transcript(transcript_id: uuid.UUID, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
     print(f"Retrieving transcript with ID: {transcript_id}")
     logger.info(f"Retrieving transcript with ID: {transcript_id}")
     transcript = db.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
@@ -87,7 +87,7 @@ def get_transcript(transcript_id: int, current_user: UserModel = Depends(get_cur
 #upload endpoint called from capture.py which sends images to fastapi server for persistent storage and also metadata gets sent to database
 
 @router.post("/transcripts/{transcript_id}/images")
-def upload_image_api(transcript_id: int, 
+def upload_image_api(transcript_id: uuid.UUID, 
                      image: UploadFile = File(...), 
                      current_user: UserModel = Depends(get_current_user),
                      captured_at: str = Form(...), 
@@ -122,7 +122,7 @@ def upload_image_api(transcript_id: int,
 #draft version of a transcript in case the browser closes or something else happens during initial session
 
 @router.get("/transcripts/{transcript_id}/draft") #if user has a draft transcript, they can retrieve it here.
-def get_transcript_draft(transcript_id: int, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_transcript_draft(transcript_id: uuid.UUID, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
     transcript = db.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
     if not transcript:
         raise HTTPException(status_code=404, detail = "Transcript not found")
