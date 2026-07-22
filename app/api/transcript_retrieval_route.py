@@ -90,7 +90,7 @@ def get_transcript(transcript_id: uuid.UUID, current_user: UserModel = Depends(g
 def upload_image_api(transcript_id: uuid.UUID, 
                      image: UploadFile = File(...), 
                      current_user: UserModel = Depends(get_current_user),
-                     captured_at: str = Form(...), 
+                     captured_at: datetime = Form(...), 
                      db: Session = Depends(get_db)):
     transcript = db.query(TranscriptModel).filter_by(transcript_id = transcript_id).first()
     if not transcript:
@@ -98,7 +98,7 @@ def upload_image_api(transcript_id: uuid.UUID,
     if transcript.user_id != current_user.id:
         raise HTTPException(status_code=403, detail = "Not authorized")
     
-    filename = f"transcript_{transcript_id}_{captured_at}.png"
+    filename = f"transcript_{transcript_id}_{captured_at.strftime("%Y%m%d_%H%M%S")}.png"
     filepath = UPLOADS_DIR / filename
 
     with open(filepath, "wb") as f:
