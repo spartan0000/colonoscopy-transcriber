@@ -138,7 +138,7 @@ async def transcribe(transcript_id: int,
 
     logger.info(f"Added time stamps: {extracted_data_with_timestamps}")
 
-    full_report = functions.build_report(transcript, extracted_data_with_timestamps) #fake data for now, replace with real metadata extraction
+    full_report = functions.build_report(transcript, extracted_data_with_timestamps) #took out the fake data function - now uses user entered data retrieved from the database
 
     logger.info(f"Full report: {full_report}")
     

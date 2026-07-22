@@ -186,6 +186,7 @@ def add_time_stamps(llm: ColonoscopyReport, cecum_reached_time, procedure_end_ti
 
 
 ###function to generate fake metadata for testing purposes. Eventually, will need to source the metadata from primary data source.  
+### this function has been retired.  just here for the hell of it
 
 # def generate_fake_data(transcribed_report):
 #     names = ['Bob Marley', 'Ben Franklin', 'Stevie Nicks', 'Santa Claus']
