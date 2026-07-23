@@ -114,7 +114,7 @@ def login_user(request: LoginRequest, db: Session = Depends(get_db)):
         "exp": datetime.now(timezone.utc) + timedelta(hours=24)
     }
 
-    token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
     return {
         'access_token': token,

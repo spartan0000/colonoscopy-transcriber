@@ -1,5 +1,8 @@
 import pytest 
 import sys
+import os
+from dotenv import load_dotenv
+import jwt
 
 from datetime import date, datetime
 
@@ -21,6 +24,10 @@ from pwdlib import PasswordHash
 import uuid
 
 pwd_hasher = PasswordHash.recommended()
+load_dotenv()
+
+ALGORITHM = os.getenv("ALGORITHM")
+SECRET_KEY = os.getenv("JWT_KEY")
 
 def test_get_procedure(db_session, client_db, auth_header, test_user):
     
@@ -572,6 +579,29 @@ def test_duplicate_registration_email(client_db, test_user):
     })
 
     assert response.status_code == 409
+
+#test the login endpoint
+def test_login_success(client_db, test_user):
+    user_1 = {
+        'username_or_email': test_user.username,
+        'password': 'testpassword'
+    }
+    response = client_db.post("/login", json=user_1)
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert 'access_token' in data
+    assert data['token_type'] == 'bearer'
+
+    #verify that the token is actually valid
+
+    payload = jwt.decode(data['access_token'], SECRET_KEY, algorithms=ALGORITHM)
+
+    assert payload['sub'] == str(test_user.id)
+    assert "exp" in payload
+
 
 
 #testing uuid as transcript_id
