@@ -4,6 +4,7 @@ import time
 import pathlib
 import requests
 import getpass
+import uuid
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -75,6 +76,16 @@ def run_trigger_capture(transcript_id: int, token: str, device_index:int = 0):
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    transcript_id = int(input("enter transcript_id: "))
+    
     token = get_token()
+
+    while True:
+        try:
+            user_input = input("Input transcript id: ").strip()
+            transcript_id = uuid.UUID(user_input)
+            break
+        except (ValueError, TypeError):
+            print("That does not look like a valid transcript id.  Please try again")
+
+
     run_trigger_capture(transcript_id=transcript_id, token = token)
