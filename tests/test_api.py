@@ -10,11 +10,15 @@ from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportWithMetad
 from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup, TranscriptModel, Images, TranscriptStatus, UserModel
 from app.services.functions import map_procedure, map_findings, map_polyp, map_transcription
 
+from app.api.transcription_route import StartProcedureRequest
+
 from app.services import functions
 
 from sqlalchemy.exc import IntegrityError
 
 from pwdlib import PasswordHash
+
+import uuid
 
 pwd_hasher = PasswordHash.recommended()
 
@@ -188,30 +192,81 @@ def test_transcript_not_found(client_db, auth_header):
 
 
 #test that the start route actually generates a transcript_id
+#and then test the start route in more detail since we changed it from simply generating a fake dummy transcript to one
+# that holds real data now
 
-def test_start_route(client_db, auth_header):
-    res = client_db.post("/transcripts/start", headers=auth_header)
+def test_start_route(client_db, auth_header, db_session):
+    start_request = {
+        'patient_name':'bob',
+        'patient_dob': date(2020,1,1).isoformat(),
+        'patient_nhi': 'ABC1234'
+    }
+    res = client_db.post("/transcripts/start", headers=auth_header, json=start_request)
     assert res.status_code == 200
     data = res.json()
     assert data['transcript_id'] is not None
 
+    transcript_id = data['transcript_id']
+
+    #check that the database was populated properly with the expected data
+    transcript = db_session.get(TranscriptModel, transcript_id)
+    
+    assert transcript.patient_name == 'bob'
+    assert transcript.patient_id == 'ABC1234' #on the front end and pydantic this field is called patient_nhi
+
+def test_start_route_missing_required_field(client_db, auth_header):
+    start_request = {
+        'patient_name': 'bob',
+        'patient_nhi': 'ABC1234'
+    }
+
+    res = client_db.post("/transcripts/start", headers=auth_header, json=start_request)
+
+    assert res.status_code == 422 #should fail pydantic validation
+
+def test_start_route_date_incorrect_format(client_db, auth_header):
+    start_request = {
+        'patient_name': 'bob',
+        'patient_dob': '2001-1-1',
+        'patient_nhi': 'ABC1234'
+    }
+
+    res = client_db.post("/transcripts/start", headers=auth_header, json=start_request)
+
+    assert res.status_code == 422 #pydantic should reject the incorrect data format
+
+def test_start_route_invalid_user(client_db, make_token):
+
+    token = make_token(user_id=9999999)
+    start_request = {
+        'patient_name':'bob',
+        'patient_dob': date(2020,1,1).isoformat(),
+        'patient_nhi': 'ABC1234'
+    }
+
+    res = client_db.post("/transcripts/start", headers = {"Authorization": f"Bearer {token}"}, json=start_request)
+
+    assert res.status_code == 401 #Unauthorized since the token is not from a user in the database
 
 def test_write_endpoint_links_images_to_procedure(client_db, db_session, auth_header, test_user):
-    #create transcript with transcript_id = 1
-    transcript = TranscriptModel(transcript_id = 1, user_id = test_user.id)
+    
+    
+    fake_transcript_id = uuid.uuid4()
+
+    transcript = TranscriptModel(transcript_id = fake_transcript_id, user_id = test_user.id)
     db_session.add(transcript)
     db_session.commit()
 
     #create two images associated with the transcript_id = 1 for now
     image1 = Images(
-        transcript_id = 1,
+        transcript_id = fake_transcript_id,
         image_path = "path/to/image1.png",
         captured_at = datetime(2025,1,1,10,0,0)
 
     )
 
     image2 = Images(
-        transcript_id = 1,
+        transcript_id = fake_transcript_id,
         image_path = "path/to/image2.png",
         captured_at = datetime(2025,1,1,10,0,1)
     )
@@ -244,7 +299,7 @@ def test_write_endpoint_links_images_to_procedure(client_db, db_session, auth_he
         metadata = metadata,
         report = colonoscopy_report
     )
-    response = client_db.post("/write", params = {'transcript_id' : 1} , json = colonoscopy_report_with_metadata.model_dump(mode = "json"), headers=auth_header)
+    response = client_db.post("/write", params = {'transcript_id' : fake_transcript_id} , json = colonoscopy_report_with_metadata.model_dump(mode = "json"), headers=auth_header)
 
     assert response.status_code == 200
 
@@ -259,12 +314,14 @@ def test_write_endpoint_links_images_to_procedure(client_db, db_session, auth_he
 
 def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session, auth_header, test_user):
     # create two transcripts
-
-    transcript1 = TranscriptModel(transcript_id = 1, user_id=test_user.id)
+    
+    transcript_id_1 = uuid.uuid4()
+    transcript_id_2 = uuid.uuid4()
+    transcript1 = TranscriptModel(transcript_id = transcript_id_1, user_id=test_user.id)
     db_session.add(transcript1)
     db_session.commit()
 
-    transcript2 = TranscriptModel(transcript_id = 2, user_id=test_user.id)
+    transcript2 = TranscriptModel(transcript_id = transcript_id_2, user_id=test_user.id)
     db_session.add(transcript2)
     db_session.commit()
 
@@ -273,14 +330,14 @@ def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session, 
 
     #create fake images for each transcript and add images to each
     image1 = Images(
-        transcript_id = 1,
+        transcript_id = transcript_id_1,
         image_path = "path/to/image1.png",
         captured_at = datetime(2025,1,1,10,0,0)
 
     )
 
     image2 = Images(
-        transcript_id = 2,
+        transcript_id = transcript_id_2,
         image_path = "path/to/image2.png",
         captured_at = datetime(2025,1,1,10,0,1)
     )
@@ -318,7 +375,7 @@ def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session, 
     )
 
     #write the colonoscoyp report to the /write endpoint for transcript 1 which generates a procedure_id and links the images to the procedure_id
-    response = client_db.post("/write", params = {'transcript_id': 1}, json = colonoscopy_report_with_metadata.model_dump(mode = "json"), headers=auth_header)
+    response = client_db.post("/write", params = {'transcript_id': transcript_id_1}, json = colonoscopy_report_with_metadata.model_dump(mode = "json"), headers=auth_header)
 
     assert response.status_code == 200
 
@@ -327,7 +384,7 @@ def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session, 
     procedure_id = response.json()['procedure_id']
 
     assert image1.procedure_id == procedure_id
-    assert image2.procedure_id is None #image2 should not be linked to a procedure_id since we haven't sent transcript with transcript_id = 2 to the /write endpoint yet
+    assert image2.procedure_id is None #image2 should not be linked to a procedure_id since we haven't sent transcript with transcript_id = transcript_id_2 to the /write endpoint yet
 
 
 def test_transcript_retrieval_with_images_sorted_by_timestamp(client_db, db_session, full_transcript, auth_header):
@@ -444,7 +501,8 @@ def test_try_to_get_draft_finalized_procedure(client_db, db_session, auth_header
     assert response.status_code == 400
 
 def test_draft_not_found(client_db, auth_header):
-    response = client_db.get(f"/transcripts/9999/draft", headers=auth_header)
+    transcript_id = uuid.uuid4() #generate a random transcript id
+    response = client_db.get(f"/transcripts/{transcript_id}/draft", headers=auth_header)
     assert response.status_code == 404 
 
 def test_get_draft_for_wrong_user(client_db, auth_header, db_session): #actually tests that the user auth prevents one user from seeing transcripts for a different user
@@ -514,3 +572,14 @@ def test_duplicate_registration_email(client_db, test_user):
     })
 
     assert response.status_code == 409
+
+
+#testing uuid as transcript_id
+
+def test_transcript_id_is_uuid(client_db, auth_header):
+    #see if using an invalid uuid returns validation error
+
+    res = client_db.post("/transcribe/123", headers=auth_header)
+
+    assert res.status_code == 422 #pydantic should reject the non uuid transcript_id
+

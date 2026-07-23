@@ -5,6 +5,7 @@ load_dotenv(".env.test")
 import pytest
 import os
 import numpy as np
+import jwt
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -15,7 +16,7 @@ from app.main import app
 from app.database.seed_lookup_tables import seed_endoscopists, seed_polyp_locations
 
 from unittest.mock import MagicMock
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 
 from fastapi.testclient import TestClient
 
@@ -227,3 +228,17 @@ def auth_header(client_db, test_user):
 
     token = response.json()['access_token']
     return {"Authorization": f"Bearer {token}"}
+
+
+SECRET_KEY = os.getenv("JWT_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+
+#fixture for tokens
+@pytest.fixture(scope="function")
+def make_token():
+    def _make_token(user_id: int, expired: bool = False):
+        exp = datetime.now(timezone.utc) + (timedelta(hours=-1) if expired else timedelta(hours=1))
+        payload = {'sub': str(user_id), 'exp': exp}
+        return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return _make_token
+

@@ -33,11 +33,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = int(payload.get("sub"))
     except jwt.ExpiredSignatureError:
-        print("Token has expired")
+        raise HTTPException(status_code=401, detail="Token has expired")
+        
     except jwt.InvalidSignatureError:
-        print("The token is invalid")
+        raise HTTPException(status_code=401, detail="Invalid token")
+        
     except jwt.exceptions.PyJWTError as e:
-        print(f"A JWT error as occurred: {e}")
+        raise HTTPException(status_code=401, detail="Invalid token: {e}")
+        
 
     user = db.get(UserModel, user_id)
     if not user:
@@ -98,7 +101,7 @@ def login_user(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.execute(stmt).scalar_one_or_none()
 
     if not user:
-        raise HTTPException(status_code=401, detail="Invaid username/email or password")
+        raise HTTPException(status_code=401, detail="Invalid username/email or password")
     
 
     
