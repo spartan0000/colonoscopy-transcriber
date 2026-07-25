@@ -602,7 +602,45 @@ def test_login_success(client_db, test_user):
     assert payload['sub'] == str(test_user.id)
     assert "exp" in payload
 
+def login_success_with_email(client_db, test_user):
+    user_1 = {
+        'username_or_email': test_user.email,
+        'password': test_user.password
+    }
 
+    response = client_db.post("/login", json=user_1)
+    assert response.status_code == 200
+
+def test_missing_fields_in_login(client_db, test_user):
+    # test for login without required fields.  
+    # front end UI will have restrictions on submitting the login without the required fields
+    #but we still need backend validation which is tested here
+    user_1 = {
+        'username_or_email': test_user.username
+    }
+
+    response = client_db.post("/login", json=user_1)
+
+    assert response.status_code == 422
+
+def test_login_wrong_password(client_db, test_user):
+    user_1 = {
+        'username_or_email': test_user.username,
+        'password': 'wrong_password'
+    }
+
+    response = client_db.post("/login", json=user_1)
+    assert response.status_code == 401
+
+def test_nonexistent_user(client_db):
+    user_1 = {
+        'username_or_email': 'nonexistent_user@example.com',
+        'password': 'notapassword'
+    }
+
+    response = client_db.post("/login", json=user_1)
+
+    assert response.status_code == 401
 
 #testing uuid as transcript_id
 
