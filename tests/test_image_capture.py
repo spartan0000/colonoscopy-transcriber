@@ -31,7 +31,7 @@ def test_save_frame_locally_calls_imwrite(tmp_path, fake_frame):
 
 #tests upload image functionality
 
-def test_upload_image_success(tmp_path):
+def test_upload_image_success(tmp_path, fake_transcript_id):
     filename = str(tmp_path / "endoscope_20260101_120000.png")
     mock_response = MagicMock()
     mock_response.json.return_value = {'image_id': 'test-image-123'}
@@ -40,13 +40,13 @@ def test_upload_image_success(tmp_path):
     with patch("capture.image_capture.requests.post", return_value = mock_response) as mock_post,\
         patch("builtins.open", mock_open(read_data = b'fake_image_bytes')):
 
-        result = upload_image(filename, transcript_id = 1, token='fake_token') #the requested endpoint returns image_id
+        result = upload_image(filename, transcript_id = fake_transcript_id, token='fake_token') #the requested endpoint returns image_id
 
         assert result['image_id'] == 'test-image-123'
 
         mock_post.assert_called_once()
 
-        assert '/transcripts/1/images' in mock_post.call_args.args[0] 
+        assert f'/transcripts/{fake_transcript_id}/images' in mock_post.call_args.args[0] 
         args, kwargs = mock_post.call_args
 
         assert kwargs['data']['captured_at'] is not None
@@ -54,7 +54,7 @@ def test_upload_image_success(tmp_path):
         assert "endoscope_20260101_120000" in filename_in_request
 
 
-def test_run_trigger_image_capture_space_then_esc(mock_cap):
+def test_run_trigger_image_capture_space_then_esc(mock_cap, fake_transcript_id):
     """space key captures and uploads, esc quits"""
 
     with patch("capture.image_capture.cv2.VideoCapture", return_value=mock_cap),\
@@ -64,12 +64,12 @@ def test_run_trigger_image_capture_space_then_esc(mock_cap):
         patch("capture.image_capture.save_frame_locally", return_value = "fake_file.png") as mock_save,\
         patch("capture.image_capture.upload_image", return_value = {'image_id': 'fake-image-123'}) as mock_upload:
 
-        run_trigger_capture(transcript_id=1, token='fake_token')
+        run_trigger_capture(transcript_id=fake_transcript_id, token='fake_token')
 
         mock_save.assert_called_once()
-        mock_upload.assert_called_once_with("fake_file.png", 1, 'fake_token')
+        mock_upload.assert_called_once_with("fake_file.png", fake_transcript_id, 'fake_token')
 
-def test_run_trigger_capture_esc_only(mock_cap):
+def test_run_trigger_capture_esc_only(mock_cap, fake_transcript_id):
     """test that escape immediately exits the image capture function"""
 
     with patch("capture.image_capture.cv2.VideoCapture", return_value=mock_cap),\
@@ -79,12 +79,12 @@ def test_run_trigger_capture_esc_only(mock_cap):
         patch("capture.image_capture.save_frame_locally") as mock_save,\
         patch("capture.image_capture.upload_image") as mock_upload:
         
-        run_trigger_capture(transcript_id = 1, token='fake_token')
+        run_trigger_capture(transcript_id = fake_transcript_id, token='fake_token')
 
         mock_save.assert_not_called()
         mock_upload.assert_not_called()
 
-def test_upload_images_raises_on_failure(tmp_path):
+def test_upload_images_raises_on_failure(tmp_path, fake_transcript_id):
     filename = str(tmp_path / "endoscope_20260101_120000")
 
     mock_response = MagicMock()
@@ -94,9 +94,9 @@ def test_upload_images_raises_on_failure(tmp_path):
         patch('builtins.open', mock_open(read_data=b'fake_image_bytes')):
 
         with pytest.raises(requests.RequestException):
-            upload_image(filename, transcript_id = 1, token='fake_token') #upload image doesn't have a try/except around it so this exception will trigger pytest.raises
+            upload_image(filename, transcript_id = fake_transcript_id, token='fake_token') #upload image doesn't have a try/except around it so this exception will trigger pytest.raises
 
-def test_run_trigger_capture_upload_failure(mock_cap):
+def test_run_trigger_capture_upload_failure(mock_cap, fake_transcript_id):
     """upload failure exception is caught and the loop continues"""
 
     with patch("capture.image_capture.cv2.VideoCapture", return_value=mock_cap),\
@@ -106,4 +106,4 @@ def test_run_trigger_capture_upload_failure(mock_cap):
         patch("capture.image_capture.save_frame_locally", return_value = 'fake_image.png') as mock_save,\
         patch("capture.image_capture.upload_image", side_effect = requests.RequestException("Failure!")) as mock_upload:
 
-        run_trigger_capture(transcript_id=1, token='fake_token') #should not raise because upload_image catches it
+        run_trigger_capture(transcript_id=fake_transcript_id, token='fake_token') #should not raise because upload_image catches it

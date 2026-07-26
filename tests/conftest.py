@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv(".env.test")
 
-
+import uuid
 import pytest
 import os
 import numpy as np
@@ -242,3 +242,6 @@ def make_token():
         return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return _make_token
 
+@pytest.fixture(scope="function")
+def fake_transcript_id():
+    return uuid.uuid4()

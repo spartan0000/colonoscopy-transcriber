@@ -551,6 +551,45 @@ def test_get_draft_for_wrong_user(client_db, auth_header, db_session): #actually
 
     assert response.status_code == 403
 
+#need a test that also tests trying to get a transcript for the wrong user
+
+def test_get_transcript_with_wrong_user(client_db, auth_header, db_session):
+    other_user = UserModel(
+        username = 'otheruser',
+        email = 'otheruser@other.co',
+        hashed_password = pwd_hasher.hash('otherpassword')
+    )
+
+    db_session.add(other_user)
+    db_session.commit()
+    db_session.refresh(other_user)
+
+    transcript = TranscriptModel(
+        user_id = other_user.id,
+        status = TranscriptStatus.IN_PROGRESS,
+        patient_id="ABC1234",
+        patient_name="Bob Builder",
+        procedure_date=datetime(2025, 1, 1),
+        endoscopist_id=1,
+        patient_dob=date(1980, 1, 1),
+        indication="screening",
+        cecum_reached=True,
+        cecum_reached_time=datetime(2025, 1, 1, 10, 0),
+        procedure_end_time=datetime(2025, 1, 1, 10, 6),
+        bbps_right=3,
+        bbps_transverse=3,
+        bbps_left=3,
+        polyps=[],
+        findings=[]
+    )
+
+    db_session.add(transcript)
+    db_session.commit()
+    db_session.refresh(transcript)
+
+    response = client_db.get(f"/transcripts/{transcript.transcript_id}/report", headers=auth_header) #same test as above for different endpoint
+    assert response.status_code == 403
+
 # test the registration endpoint
 
 def test_new_registration(client_db):
@@ -651,3 +690,9 @@ def test_transcript_id_is_uuid(client_db, auth_header):
 
     assert res.status_code == 422 #pydantic should reject the non uuid transcript_id
 
+def test_nonexistent_transcript(client_db, auth_header): #similar to test for draft above.  uuid doesn't exist.  should get 404 file not found
+    transcript_id = uuid.uuid4()
+
+    res = client_db.get(f"/transcripts/{transcript_id}/report", headers=auth_header)
+
+    assert res.status_code == 404
