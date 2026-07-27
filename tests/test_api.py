@@ -696,3 +696,37 @@ def test_nonexistent_transcript(client_db, auth_header): #similar to test for dr
     res = client_db.get(f"/transcripts/{transcript_id}/report", headers=auth_header)
 
     assert res.status_code == 404
+
+### end to end test for the transcript life cycle - 
+
+@pytest.mark.integration
+def test_transcript_lifecycle_end_to_end(client_db, auth_header, make_token, test_user):
+    token = make_token(test_user.id)
+    headers = {"Authorization":f"Bearer {token}"}
+
+    start_result = client_db.post("/transcripts/start", headers=headers, json={
+        "patient_name": "santa claus",
+        "patient_dob": date(1900,1,1).isoformat(),
+        "patient_nhi": "ABC1234"
+    })
+
+    assert start_result.status_code == 200
+
+    transcript_id = start_result.json()['transcript_id']
+
+    transcribe_result = client_db.post(f"/transcribe/{transcript_id}",
+                                       headers=headers,
+                                       files={'file':("transcript.txt", b"some transcript text", "text/plain")},
+                                       data = {
+                                           "cecum_reached_time" : datetime(2026, 1, 1, 10, 30).isoformat(),
+                                           "procedure_end_time" : datetime(2026, 1, 1, 10, 36).isoformat()
+                                       })
+    assert transcribe_result.status_code == 200
+
+    fetch_result = client_db.get(f"/transcripts/{transcript_id}/draft", headers=headers)
+    assert fetch_result.status_code == 200
+
+    draft = fetch_result.json()
+
+    assert draft['patient_name'] == 'santa claus'
+

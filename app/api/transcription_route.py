@@ -157,7 +157,7 @@ async def transcribe(transcript_id: uuid.UUID,
         transcript.bbps_left = updated.bbps_left
         transcript.bbps_transverse = updated.bbps_transverse
         transcript.bbps_right = updated.bbps_right
-        transcript.polyps = updated.polyp
+        transcript.polyps = updated.polyps
         transcript.findings = updated.findings
 
 

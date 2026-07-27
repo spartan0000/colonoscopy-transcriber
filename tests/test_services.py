@@ -85,9 +85,10 @@ async def test_extract_json(mock_parse):
     assert isinstance(output, dict)
 
 @pytest.mark.asyncio
-async def test_extract_json_2():
-    mock_parse = AsyncMock()
-    mock_parse.output_parsed = ColonoscopyReport(
+@patch('app.services.functions.chat_client.responses.parse', new_callable=AsyncMock)
+async def test_extract_json_2(mock_parse):
+    
+    mock_parse.return_value.output_parsed = ColonoscopyReport(
         bbps_right = None,
         bbps_transverse = None,
         bbps_left = None,
@@ -95,8 +96,8 @@ async def test_extract_json_2():
         findings = []
     )
 
-    with patch('app.services.functions.chat_client.responses.parse', return_value=mock_parse):
-        result, status = await functions.extract_json({'entire_text': 'x', 'segments': []})
+    
+    result, status = await functions.extract_json({'entire_text': 'x', 'segments': []})
     
     assert result.bbps_right is None
 
