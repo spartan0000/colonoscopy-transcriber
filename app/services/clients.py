@@ -1,4 +1,4 @@
-from openai import OpenAI, AzureOpenAI, AsyncAzureOpenAI
+from openai import OpenAI, AzureOpenAI, AsyncAzureOpenAI, AsyncOpenAI
 import os
 
 from dotenv import load_dotenv
@@ -23,3 +23,10 @@ whisper_client = AsyncAzureOpenAI(
     azure_endpoint = os.getenv("AZURE_WHISPER_ENDPOINT"),
     api_version = os.getenv("AZURE_WHISPER_API_VERSION")
 )
+
+#just need to swap the client out for this one and also the model name to qwen3:8b
+qwen_client = AsyncOpenAI(
+    api_key = os.getenv("QWEN_API_KEY")
+    base_url="http://localhost:11434/v1"
+)
+
