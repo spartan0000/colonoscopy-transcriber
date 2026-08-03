@@ -283,6 +283,11 @@ def map_procedure(report, metadata, user_id):
         bbps_right = report.bbps_right,
         bbps_transverse = report.bbps_transverse,
         bbps_left = report.bbps_left,
+        ileocecal_valve_identified = report.ileocecal_valve_identified,
+        appendiceal_orifice_identified = report.appendiceal_orifice_identified,
+        terminal_ileum_intubated = report.terminal_ileum_intubated,
+        tripartite_fold_identified = report.tripartite_fold_identified,
+        other_landmarks_identified = report.other_landmarks_identified,
         
             
     )
@@ -302,6 +307,11 @@ def map_transcription(full_report: ColonoscopyReportWithMetadata, user_id):
         bbps_right = full_report.report.bbps_right,
         bbps_transverse = full_report.report.bbps_transverse,
         bbps_left = full_report.report.bbps_left,
+        ileocecal_valve_identified = full_report.report.ileocecal_valve_identified,
+        appendiceal_orifice_identified = full_report.report.appendiceal_orifice_identified,
+        terminal_ileum_intubated = full_report.report.terminal_ileum_intubated,
+        tripartite_fold_identified = full_report.report.tripartite_fold_identified,
+        other_landmarks_identified = full_report.report.other_landmarks_identified,
         polyps = [p.model_dump() if isinstance (p, BaseModel) else p for p in full_report.report.polyps],
         findings = [f.model_dump() if isinstance (f, BaseModel) else f for f in full_report.report.findings],
         #status is set to in_progress by default.  so in the final report generation function, we just update the status to finalized.

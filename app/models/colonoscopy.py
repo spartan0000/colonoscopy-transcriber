@@ -25,7 +25,15 @@ class ColonoscopyReport(BaseModel): #from the LLM
     bbps_right: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the right colon")
     bbps_transverse: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the transverse colon")
     bbps_left: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the left colon")
-    
+
+    #adding actual criteria for cecum reached - optional here in case LLM can't parse or transcribe it
+
+    ileocecal_valve_identified: Optional[bool] = Field(default = None, description="whether the ileocecal valve was identified")
+    appendiceal_orifice_identified: Optional[bool] = Field(default = None)
+    terminal_ileum_intubated: Optional[bool] = Field(default = None)
+    tripartite_fold_identified: Optional[bool] = Field(default = None)
+    other_landmarks_identified: Optional[bool] = Field(default = None)
+        
     #need to add other findings such as diveritcula, hemorrhoids, inflammation.
     polyps: List[Polyp] = Field(default_factory = list)
     findings: List[Finding] = Field(default_factory = list)
@@ -53,7 +61,14 @@ class ColonoscopyReportWithTime(BaseModel): #add time stamps to what the LLM ret
     bbps_right: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the right colon")
     bbps_transverse: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the transverse colon")
     bbps_left: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the left colon")
-    
+
+
+    #still optional because all three may not be true and don't have to be true for cecum reached to be true
+    ileocecal_valve_identified: Optional[bool] = Field(default = None, description="whether the ileocecal valve was identified")
+    appendiceal_orifice_identified: Optional[bool] = Field(default = None)
+    terminal_ileum_intubated: Optional[bool] = Field(default = None)
+    tripartite_fold_identified: Optional[bool] = Field(default = None)
+    other_landmarks_identified: Optional[bool] = Field(default = None)
     
     polyps: List[Polyp] = Field(default_factory = list)
     findings: List[Finding] = Field(default_factory = list)
@@ -110,6 +125,13 @@ class ColonoscopyReportFinal(BaseModel):
     bbps_right: int = Field(..., ge=0, le=3, description="boston bowel prep score for the right colon")
     bbps_transverse: int = Field(..., ge=0, le=3, description="boston bowel prep score for the transverse colon")
     bbps_left: int = Field(..., ge=0, le=3, description="boston bowel prep score for the left colon")
+
+    #still optional because all three may not be true and don't have to be true for cecum reached to be true
+    ileocecal_valve_identified: Optional[bool] = Field(default = None, description="whether the ileocecal valve was identified")
+    appendiceal_orifice_identified: Optional[bool] = Field(default = None)
+    terminal_ileum_intubated: Optional[bool] = Field(default = None)
+    tripartite_fold_identified: Optional[bool] = Field(default = None)
+    other_landmarks_identified: Optional[bool] = Field(default = None)
     
     #need to add other findings such as diveritcula, hemorrhoids, inflammation.
     polyps: List[PolypFinal] = Field(default_factory = list)

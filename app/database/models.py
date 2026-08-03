@@ -98,6 +98,23 @@ class ProcedureModel(Base): #table for the finalized procedure transcript
             """, 
             name = "check_cecum_consistency"
         ),
+
+        CheckConstraint(
+            """
+            (cecum_reached = false)
+
+            OR
+
+            (cecum_reached = true AND (
+                terminal_ileum_intubated = true
+                OR (appendiceal_orifice_identified = true AND ileocecal_valve_identified = True)
+                OR tripartite_fold_identified = true
+                OR other_landmarks_identified IS NOT NULL))
+            """,
+            name = "check_cecum_reached_criteria"
+        )
+
+
         Index("idx_proc_patient_date", "patient_id", "procedure_date")
         )
     
@@ -141,6 +158,11 @@ class ProcedureModel(Base): #table for the finalized procedure transcript
     ),
     nullable=True
     )
+    #cecal intubation criteria - constraint above as check constraint to ensure that if cecum reached is true, the one or more of thsee must also be true
+    terminal_ileum_intubated: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    appendiceal_orifice_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    tripartite_fold_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    other_landmarks_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
 
     entered_by: Mapped[str] = mapped_column(String(100), nullable=True)
     source_system: Mapped[str] = mapped_column(String(100), nullable=True)
