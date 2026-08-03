@@ -106,13 +106,13 @@ class ProcedureModel(Base): #table for the finalized procedure transcript
             OR
 
             (cecum_reached = true AND (
-                terminal_ileum_intubated = true
-                OR (appendiceal_orifice_identified = true AND ileocecal_valve_identified = True)
-                OR tripartite_fold_identified = true
-                OR other_landmarks_identified IS NOT NULL))
+                terminal_ileum_intubated IS TRUE
+                OR (appendiceal_orifice_identified IS TRUE AND ileocecal_valve_identified IS TRUE)
+                OR tripartite_fold_identified IS TRUE
+                OR other_landmarks_identified IS TRUE))
             """,
             name = "check_cecum_reached_criteria"
-        )
+        ),
 
 
         Index("idx_proc_patient_date", "patient_id", "procedure_date")
@@ -160,6 +160,7 @@ class ProcedureModel(Base): #table for the finalized procedure transcript
     )
     #cecal intubation criteria - constraint above as check constraint to ensure that if cecum reached is true, the one or more of thsee must also be true
     terminal_ileum_intubated: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    ileocecal_valve_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     appendiceal_orifice_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     tripartite_fold_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     other_landmarks_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
@@ -246,6 +247,7 @@ class TranscriptModel(Base):
     
     #cecal intubation criteria - no constraint here as this is the temporary holding table, constraint is only enforced in final ProcedureModel table
     terminal_ileum_intubated: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    ileocecal_valve_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     appendiceal_orifice_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     tripartite_fold_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     other_landmarks_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)

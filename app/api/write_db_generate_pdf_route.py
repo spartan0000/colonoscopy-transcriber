@@ -10,6 +10,7 @@ from app.api.register_login_route import get_current_user
 
 import uuid
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from pathlib import Path
 
@@ -55,7 +56,21 @@ def write_db_pdf(transcript_id: uuid.UUID,
 
         logger.info(f"Logging to db complete")
         logger.info(f"Procedure ID: {procedure.procedure_id}")
+    except IntegrityError as e:
+        db.rollback()
         
+        if 'check_cecum_reached_criteria' in str(e.orig):
+            raise HTTPException(
+                status_code=422,
+                detail="Cannot finalize: Please ensure at least one cecal landmark/criteria is selected"
+            )
+        logger.error("DB write failed due to integrity error", exc_info=True)
+        print(f"DB write failed due to integrity error: {e}")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to write to database due to integrity error"
+        )
     except Exception as e:
         print("DB WRITE FAILED", e)
         logger.error("DB write failed", exc_info=True)

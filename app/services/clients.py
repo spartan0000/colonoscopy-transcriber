@@ -26,7 +26,7 @@ whisper_client = AsyncAzureOpenAI(
 
 #just need to swap the client out for this one and also the model name to qwen3:8b
 qwen_client = AsyncOpenAI(
-    api_key = os.getenv("QWEN_API_KEY")
+    api_key = os.getenv("QWEN_API_KEY"),
     base_url="http://localhost:11434/v1"
 )
 

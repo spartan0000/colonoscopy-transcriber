@@ -9,6 +9,9 @@ from app.services.functions import map_procedure, map_findings, map_polyp
 from app.services import functions
 
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import text
+
+from tests.conftest import procedure_factory
 
 
 
@@ -468,3 +471,20 @@ def test_full_pipeline_with_api_endpoint(db_session, client_db, auth_header, tes
     assert len(data['polyps']) == 1
     assert data['cecum_reached'] == True
 
+# add tests for the new cecal intubation criteria fields in the ProcedureModel
+def test_cecal_intubation_constraint(db_session, procedure_factory):
+    #since the factory already does the commit - the integrity error should be raised here when we try to create the procedure.
+    #originally had a separate flush with pytest.raises but that didnt' raise anything because the flush was called after the original commit where the error probably happened
+    with pytest.raises(IntegrityError) as e:
+        procedure1 = procedure_factory(
+            terminal_ileum_intubated = None,
+            ileocecal_valve_identified = None,
+            appendiceal_orifice_identified = None,
+            tripartite_fold_identified = None,
+            other_landmarks_identified = None,
+        )
+
+# def test_constraint_exists(db_session):
+#     result = db_session.execute(text("SELECT conname FROM pg_constraint WHERE conname = 'check_cecum_reached_criteria'")).fetchall()
+#     print(result)
+#     assert len(result) == 1

@@ -112,6 +112,11 @@ def procedure(db_session, test_user):
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
+        terminal_ileum_intubated = True,
+        ileocecal_valve_identified = True,
+        appendiceal_orifice_identified = True,
+        tripartite_fold_identified = True,
+        other_landmarks_identified = True,
         polyps = [],
         findings = []
         
@@ -122,6 +127,42 @@ def procedure(db_session, test_user):
     db_session.refresh(proc)
 
     return proc
+
+@pytest.fixture(scope = "function")
+def procedure_factory(db_session, test_user):
+    """factory fixture to create proceduremodel objects with different attributes for testing"""
+    def _make_procedure(**kwargs):
+        defaults = dict(
+            user_id = test_user.id,
+            patient_id="ABC1234",
+            patient_name="Bob Builder",
+            procedure_date=datetime(2025, 1, 1),
+            endoscopist_id=1,
+            patient_dob=date(1980, 1, 1),
+            indication="screening",
+            cecum_reached=True,
+            cecum_reached_time=datetime(2025, 1, 1, 10, 0),
+            procedure_end_time=datetime(2025, 1, 1, 10, 6),
+            bbps_right=3,
+            bbps_transverse=3,
+            bbps_left=3,
+            terminal_ileum_intubated = True,
+            ileocecal_valve_identified = True,
+            appendiceal_orifice_identified = True,
+            tripartite_fold_identified = True,
+            other_landmarks_identified = True,
+            polyps=[],
+            findings=[],
+            
+        )
+        defaults.update(kwargs)
+
+        procedure = ProcedureModel(**defaults)
+
+        db_session.add(procedure)
+        db_session.commit()
+        return procedure
+    return _make_procedure
 
 #transcript fixture for tests - basically same as procedure
 @pytest.fixture(scope = "function")
@@ -152,7 +193,7 @@ def full_transcript(db_session, test_user):
 def transcript_factory(db_session, test_user):
     """factory fixture to create transcripts with different attributes for testign"""
     def _make_transcript(**kwargs):
-        transcript = TranscriptModel(
+        defaults = dict(
             user_id = test_user.id,
             patient_id="ABC1234",
             patient_name="Bob Builder",
@@ -168,8 +209,11 @@ def transcript_factory(db_session, test_user):
             bbps_left=3,
             polyps=[],
             findings=[],
-            **kwargs
+            
         )
+
+        defaults.update(kwargs)
+        transcript = TranscriptModel(**defaults)
         db_session.add(transcript)
         db_session.commit()
         return transcript
