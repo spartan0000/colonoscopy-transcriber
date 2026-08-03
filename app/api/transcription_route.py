@@ -141,7 +141,13 @@ async def transcribe(transcript_id: uuid.UUID,
     full_report = functions.build_report(transcript, extracted_data_with_timestamps) #took out the fake data function - now uses user entered data retrieved from the database
 
     logger.info(f"Full report: {full_report}")
-    
+
+    # below seems redundant but the idea here is that the transcript retrieved above is the barebones starter transcript
+    # the block below basically overwrites that with the validated data that the LLM parsed from the recorded audio
+    # will need a refactor later to simplify as updates to the database schema require changes in multiple places
+    # which makes this vulnerable to bugs if I forget to update it in one of the places
+    # but will just keep it for now.
+
     try:
         updated = functions.map_transcription(full_report, user_id=current_user.id)
 
@@ -157,6 +163,11 @@ async def transcribe(transcript_id: uuid.UUID,
         transcript.bbps_left = updated.bbps_left
         transcript.bbps_transverse = updated.bbps_transverse
         transcript.bbps_right = updated.bbps_right
+        transcript.terminal_ileum_intubated = updated.terminal_ileum_intubated
+        transcript.appendiceal_orifice_identified = updated.appendiceal_orifice_identified
+        transcript.ileocecal_valve_identified = updated.ileocecal_valve_identified
+        transcript.tripartite_fold_identified = updated.tripartite_fold_identified
+        transcript.other_landmarks_identified = updated.other_landmarks_identified
         transcript.polyps = updated.polyps
         transcript.findings = updated.findings
 
