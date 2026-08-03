@@ -243,6 +243,13 @@ class TranscriptModel(Base):
     bbps_transverse: Mapped[int] = mapped_column(Integer, nullable=True)
     bbps_left: Mapped[int] = mapped_column(Integer, nullable=True)
     #bbps total is a computed column in the procedures table so we store the individual segment scores here for now, total computed when report finalized
+    
+    #cecal intubation criteria - no constraint here as this is the temporary holding table, constraint is only enforced in final ProcedureModel table
+    terminal_ileum_intubated: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    appendiceal_orifice_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    tripartite_fold_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    other_landmarks_identified: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    
     polyps: Mapped[List] = mapped_column(JSONB, nullable=True)
     findings: Mapped[List] = mapped_column(JSONB, nullable=True)
     status: Mapped[TranscriptStatus] = mapped_column(Enum(TranscriptStatus), default=TranscriptStatus.IN_PROGRESS, nullable=False)
