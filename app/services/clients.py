@@ -30,3 +30,7 @@ qwen_client = AsyncOpenAI(
     base_url="http://localhost:11434/v1"
 )
 
+gemma4_client = AsyncOpenAI(
+    api_key = os.getenv("GEMMA4_API_KEY"),
+    base_url="http://localhost:11434/v1"
+)
