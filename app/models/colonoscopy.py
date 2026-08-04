@@ -56,7 +56,7 @@ class ColonoscopyReportWithTime(BaseModel): #add time stamps to what the LLM ret
         return None
 
 
-    cecum_reached_time: datetime = Field(..., description="timestamp when the cecum was reached")
+    cecum_reached_time: Optional[datetime] = Field(default = None, description="timestamp when the cecum was reached, might be null if cecum not reached")
     procedure_end_time: datetime = Field(..., description="timestamp when the procedure ended")
     bbps_right: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the right colon")
     bbps_transverse: Optional[int] = Field(default = None, ge=0, le=3, description="boston bowel prep score for the transverse colon")
@@ -119,7 +119,7 @@ class ColonoscopyReportFinal(BaseModel):
         return None
 
 
-    cecum_reached_time: datetime = Field(..., description="timestamp when the cecum was reached")
+    cecum_reached_time: Optional[datetime] = Field(default=None, description="timestamp when the cecum was reached, might be null if cecum not reached")
     procedure_end_time: datetime = Field(..., description="timestamp when the procedure ended")
     #withdrawal_time: float = Field(..., description="calculated withdrawal time given cecum reached time and procedure end time")
     bbps_right: int = Field(..., ge=0, le=3, description="boston bowel prep score for the right colon")

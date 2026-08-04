@@ -50,6 +50,11 @@ def get_transcript(transcript_id: uuid.UUID, current_user: UserModel = Depends(g
         bbps_right = transcript.bbps_right,
         bbps_transverse = transcript.bbps_transverse,
         bbps_left = transcript.bbps_left,
+        terminal_ileum_intubated=transcript.terminal_ileum_intubated,
+        appendiceal_orifice_identified=transcript.appendiceal_orifice_identified,
+        ileocecal_valve_identified=transcript.ileocecal_valve_identified,
+        tripartite_fold_identified=transcript.tripartite_fold_identified,
+        other_landmarks_identified=transcript.other_landmarks_identified,
         polyps = transcript.polyps,
         findings = transcript.findings,
 
@@ -145,6 +150,11 @@ def get_transcript_draft(transcript_id: uuid.UUID, current_user: UserModel = Dep
         'bbps_right': transcript.bbps_right,
         'bbps_transverse': transcript.bbps_transverse,
         'bbps_left': transcript.bbps_left,
+        'terminal_ileum_intubated': transcript.terminal_ileum_intubated,
+        'appendiceal_orifice_identified': transcript.appendiceal_orifice_identified,
+        'ileocecal_valve_identified': transcript.ileocecal_valve_identified,
+        'tripartite_fold_identified': transcript.tripartite_fold_identified,
+        'other_landmarks_identified': transcript.other_landmarks_identified,
         'polyps': transcript.polyps,
         'findings': transcript.findings,
     }

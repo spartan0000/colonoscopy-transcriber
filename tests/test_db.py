@@ -488,3 +488,26 @@ def test_cecal_intubation_constraint(db_session, procedure_factory):
 #     result = db_session.execute(text("SELECT conname FROM pg_constraint WHERE conname = 'check_cecum_reached_criteria'")).fetchall()
 #     print(result)
 #     assert len(result) == 1
+
+def test_cecum_reached_terminal_ileum_only(procedure_factory):
+    #just testing constraints here - in reality, if you've intubated the TI, then you've obviously identified the ICV as well.
+    procedure1 = procedure_factory(
+        cecum_reached = True,
+        terminal_ileum_intubated = True,
+        ileocecal_valve_identified = False,
+        appendiceal_orifice_identified = False,
+        tripartite_fold_identified = False,
+        other_landmarks_identified = False
+    )
+    #should not raise an integrity error- the procedure factory fixture commits to the db so just running this will raise an error if there is a contraint violation
+
+
+def test_cecum_reached_appendiceal_orifice_and_icv(procedure_factory):
+    procedure1 = procedure_factory(
+        cecum_reached = True,
+        terminal_ileum_intubated = False,
+        ileocecal_valve_identified = True,
+        appendiceal_orifice_identified = True,
+        tripartite_fold_identified = True,
+        other_landmarks_identified = False
+    )

@@ -111,6 +111,12 @@ def test_map_procedure(test_user):
         bbps_right = 2,
         bbps_transverse = 2,
         bbps_left = 3,
+        ileocecal_valve_identified = True,
+        appendiceal_orifice_identified = True,
+        terminal_ileum_intubated = False,
+        tripartite_fold_identified = False,
+        other_landmarks_identified = False,
+        
     )
 
     proc = map_procedure(report, metadata, user_id=test_user.id)
@@ -118,6 +124,7 @@ def test_map_procedure(test_user):
     assert proc.patient_id == "ABC1234"
     assert proc.patient_name == "test patient"
     assert proc.cecum_reached == True
+    assert proc.ileocecal_valve_identified == True
     
 
 
@@ -137,6 +144,11 @@ def test_full_mapping(test_user):
         bbps_left = 3,
         cecum_reached_time = datetime(2025,1,1,10,0),
         procedure_end_time = datetime(2025,1,1,10,6),
+        ileocecal_valve_identified = True,
+        appendiceal_orifice_identified = True,
+        terminal_ileum_intubated = False,
+        tripartite_fold_identified = False,
+        other_landmarks_identified = False,
         polyps = [
             {
                 'polyp_id': 1,
@@ -153,6 +165,7 @@ def test_full_mapping(test_user):
         procedure.polyps.append(map_polyp(polyp))
     
     assert len(procedure.polyps) ==  1
+    assert procedure.tripartite_fold_identified == False
 
 
 
