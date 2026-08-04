@@ -511,3 +511,14 @@ def test_cecum_reached_appendiceal_orifice_and_icv(procedure_factory):
         tripartite_fold_identified = True,
         other_landmarks_identified = False
     )
+
+def test_finalize_returns_422_on_missing_landmarks(client_db, test_user, auth_header, transcript_factory, build_valid_report_payload):
+
+    transcript = transcript_factory(user_id = test_user.id)
+    payload = build_valid_report_payload(transcript.transcript_id) # the payload fixture has all the cecal landmarks as False and cecum reached True
+
+    res = client_db.post(f"/transcripts/{transcript.transcript_id}/write", json=payload, headers=auth_header)
+
+    assert res.status_code == 422
+
+    

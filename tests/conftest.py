@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv(".env.test")
 
 import uuid
+import json
 import pytest
 import os
 import numpy as np
@@ -10,6 +11,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from app.database.connection import get_db
+from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal
 from app.database.models import Base, ProcedureModel, PolypModel, FindingModel, TranscriptModel, Images, UserModel, TranscriptStatus
 from app.main import app
 
@@ -33,6 +35,7 @@ TEST_DATABASE_URL = (
     
 
 )
+
 
 
 test_engine = create_engine(TEST_DATABASE_URL)
@@ -289,3 +292,35 @@ def make_token():
 @pytest.fixture(scope="function")
 def fake_transcript_id():
     return uuid.uuid4()
+
+
+@pytest.fixture(scope="function")
+def build_valid_report_payload():
+    def _build(transcript_id, **overrides):
+        metadata = ProcedureMetadataFinal(
+            patient_NHI="ABC1234",
+            patient_name="Test Patient",
+            procedure_date=datetime(2026, 1, 1),
+            endoscopist_id=1,
+            indication="screening",
+            patient_dob=date(1980, 1, 1),
+        )
+        report = ColonoscopyReportFinal(
+            cecum_reached=True,
+            cecum_reached_time=datetime(2026, 1, 1, 10, 0),
+            procedure_end_time=datetime(2026, 1, 1, 10, 6),
+            bbps_right=3,
+            bbps_transverse=3,
+            bbps_left=3,
+            terminal_ileum_intubated=None,
+            appendiceal_orifice_identified=None,
+            ileocecal_valve_identified=None,
+            tripartite_fold_identified=None,
+            other_landmarks_identified=None,
+            polyps=[],
+            findings=[],
+            **overrides,   # lets each test override just what it cares about
+        )
+        full_report = ColonoscopyReportWithMetadataFinal(metadata=metadata, report=report)
+        return json.loads(full_report.model_dump_json())
+    return _build

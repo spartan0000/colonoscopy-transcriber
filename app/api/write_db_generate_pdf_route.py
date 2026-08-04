@@ -25,7 +25,7 @@ router = APIRouter(tags=['write_db_pdf'])
 #this is the final endpoint where the user has verified the data is correct and submits it
 #writes to Procedure table which is where the finalized transcript data goes
 
-@router.post("/write")
+@router.post("/transcripts/{transcript_id}/write")
 def write_db_pdf(transcript_id: uuid.UUID, 
                  full_report: ColonoscopyReportWithMetadataFinal, 
                  current_user: UserModel = Depends(get_current_user),
