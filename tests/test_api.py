@@ -29,24 +29,24 @@ load_dotenv()
 ALGORITHM = os.getenv("ALGORITHM")
 SECRET_KEY = os.getenv("JWT_KEY")
 
-def test_get_procedure(db_session, client_db, auth_header, test_user):
+def test_get_procedure(db_session, client_db, auth_header, test_user, procedure_factory):
     
-    
-    procedure = ProcedureModel(
-        user_id = test_user.id,
-        patient_name = 'santa claus',
-        patient_id = '123',
-        endoscopist_id = 1,
-        procedure_date = datetime(2025,1,1),
-        patient_dob = datetime(1980,1,1),
-        cecum_reached = True,
-        cecum_reached_time = datetime(2025,1,1,10,0),
-        procedure_end_time = datetime(2025,1,1,10,6),
-        bbps_right = 3,
-        bbps_transverse = 3,
-        bbps_left = 3,
+    procedure = procedure_factory(user_id=test_user.id)
+    # procedure = ProcedureModel(
+    #     user_id = test_user.id,
+    #     patient_name = 'santa claus',
+    #     patient_id = '123',
+    #     endoscopist_id = 1,
+    #     procedure_date = datetime(2025,1,1),
+    #     patient_dob = datetime(1980,1,1),
+    #     cecum_reached = True,
+    #     cecum_reached_time = datetime(2025,1,1,10,0),
+    #     procedure_end_time = datetime(2025,1,1,10,6),
+    #     bbps_right = 3,
+    #     bbps_transverse = 3,
+    #     bbps_left = 3,
         
-    )
+    # )
 
     db_session.add(procedure)
     db_session.commit()
@@ -94,12 +94,12 @@ def test_invalid_procedure_id(client_db, auth_header):
     res = client_db.get("/procedures/abc/full", headers=auth_header) #actually did this error on accident on an earlier test but testing it for real this time as an expected error
     assert res.status_code == 422
 
-def test_polyps_procedure_relationship(client_db, test_user, auth_header, db_session): #making sure that polyps relationship attaches it to the correct procedure
+def test_polyps_procedure_relationship(client_db, test_user, auth_header, db_session, procedure_factory): #making sure that polyps relationship attaches it to the correct procedure
     p1 = ProcedureModel(
         user_id = test_user.id,
         patient_name = 'santa claus',
         patient_id = 'ABC1234',
-        endoscopist_id = 1,
+        endoscopist_id = test_user.endoscopist_id,
         procedure_date = datetime(2025,1,1),
         patient_dob = datetime(1980,1,1),
         cecum_reached = True,
@@ -108,6 +108,11 @@ def test_polyps_procedure_relationship(client_db, test_user, auth_header, db_ses
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
+        terminal_ileum_intubated = True,
+        ileocecal_valve_identified = True,
+        appendiceal_orifice_identified = True,
+        tripartite_fold_identified = True,
+        other_landmarks_identified = True,
         created_at = datetime(2025,1,1)
     )
 
@@ -115,7 +120,7 @@ def test_polyps_procedure_relationship(client_db, test_user, auth_header, db_ses
         user_id = test_user.id,
         patient_name = 'papa smurf',
         patient_id = 'DEF1234',
-        endoscopist_id = 1,
+        endoscopist_id = test_user.endoscopist_id,
         procedure_date = datetime(2025,1,1),
         patient_dob = datetime(1980,1,1),
         cecum_reached = True,
@@ -124,6 +129,11 @@ def test_polyps_procedure_relationship(client_db, test_user, auth_header, db_ses
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
+        terminal_ileum_intubated = True,
+        ileocecal_valve_identified = True,
+        appendiceal_orifice_identified = True,
+        tripartite_fold_identified = True,
+        other_landmarks_identified = True,
         created_at = datetime(2025,1,1)
     )
 
@@ -289,6 +299,7 @@ def test_write_endpoint_links_images_to_procedure(client_db, db_session, auth_he
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
+        terminal_ileum_intubated = True,
         polyps = [],
         findings = []
     )
@@ -306,7 +317,7 @@ def test_write_endpoint_links_images_to_procedure(client_db, db_session, auth_he
         metadata = metadata,
         report = colonoscopy_report
     )
-    response = client_db.post("/write", params = {'transcript_id' : fake_transcript_id} , json = colonoscopy_report_with_metadata.model_dump(mode = "json"), headers=auth_header)
+    response = client_db.post(f"transcripts/{fake_transcript_id}/write", json = colonoscopy_report_with_metadata.model_dump(mode = "json"), headers=auth_header)
 
     assert response.status_code == 200
 
@@ -363,6 +374,7 @@ def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session, 
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
+        terminal_ileum_intubated = True,
         polyps = [],
         findings = []
     )
@@ -382,7 +394,7 @@ def test_pdf_uses_procedure_images_not_transcript_images(client_db, db_session, 
     )
 
     #write the colonoscoyp report to the /write endpoint for transcript 1 which generates a procedure_id and links the images to the procedure_id
-    response = client_db.post("/write", params = {'transcript_id': transcript_id_1}, json = colonoscopy_report_with_metadata.model_dump(mode = "json"), headers=auth_header)
+    response = client_db.post(f"transcripts/{transcript_id_1}/write", json = colonoscopy_report_with_metadata.model_dump(mode = "json"), headers=auth_header)
 
     assert response.status_code == 200
 

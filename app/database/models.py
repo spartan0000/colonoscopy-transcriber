@@ -278,11 +278,13 @@ class UserModel(Base):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endoscopist_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("endoscopist_lookup.endoscopist_id"), nullable=True)
     username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(200), nullable=False)
     email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     procedures: Mapped[List["ProcedureModel"]] = relationship("ProcedureModel", back_populates="user")
     transcripts: Mapped[List["TranscriptModel"]] = relationship("TranscriptModel", back_populates="user")
+    
 
 # class Histology(Base):
 #     __tablename__ = 'histology'

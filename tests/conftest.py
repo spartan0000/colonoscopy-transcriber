@@ -140,7 +140,7 @@ def procedure_factory(db_session, test_user):
             patient_id="ABC1234",
             patient_name="Bob Builder",
             procedure_date=datetime(2025, 1, 1),
-            endoscopist_id=1,
+            endoscopist_id=test_user.endoscopist_id,
             patient_dob=date(1980, 1, 1),
             indication="screening",
             cecum_reached=True,
@@ -257,7 +257,8 @@ def test_user(db_session):
     user = UserModel(
         username = "testuser",
         email = "testuser@test.com",
-        hashed_password = pwd_hasher.hash("testpassword")
+        hashed_password = pwd_hasher.hash("testpassword"),
+        endoscopist_id = 1 #references a real row in the lookup table for testing purposes
     )
 
     db_session.add(user)

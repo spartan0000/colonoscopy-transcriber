@@ -36,7 +36,7 @@ def start_procedure(start : StartProcedureRequest,
     new_transcript = TranscriptModel(
         user_id = current_user.id,
         patient_name = start.patient_name,
-        endoscopist_id = 1,
+        endoscopist_id = current_user.endoscopist_id,
         patient_dob = start.patient_dob,
         patient_id = start.patient_nhi,
         procedure_date = date.today(),

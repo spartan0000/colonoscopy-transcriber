@@ -35,6 +35,7 @@ def test_end_to_end(db_session, test_user):
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
+        terminal_ileum_intubated = True,
         
         polyps = [
             {
@@ -201,6 +202,7 @@ def test_times_wrong_order(db_session, test_user):
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
+        terminal_ileum_intubated = True,
         
     )
     db_session.add(proc1)
@@ -223,6 +225,7 @@ def test_unique_patient_date(db_session, test_user):
         bbps_right = 3,
         bbps_transverse = 3,
         bbps_left = 3,
+        terminal_ileum_intubated = True,
         
     )
 
@@ -273,6 +276,7 @@ def test_bbps_null_value(db_session, test_user): #does a null value for a segmen
         bbps_right = None,
         bbps_transverse = 3,
         bbps_left = 3,
+        terminal_ileum_intubated = True,
         
     )
 
@@ -298,6 +302,7 @@ def test_bbps_insert_update_total(db_session, test_user): #does the null bbps_to
         bbps_right = None,
         bbps_transverse = 3,
         bbps_left = 3,
+        terminal_ileum_intubated = True,
         
     )
 
@@ -323,6 +328,7 @@ def test_bbps_invalid_value(db_session):
         bbps_right = 9, #invalid value - test check constraint
         bbps_transverse = 3,
         bbps_left = 3,
+        terminal_ileum_intubated = True,
         
     )
     db_session.add(proc1)
@@ -337,6 +343,7 @@ def test_full_pipeline(db_session, test_user): #does raw JSON (from the LLM) end
         'bbps_right' : 3,
         'bbps_transverse' : 3,
         'bbps_left' : 3,
+        'terminal_ileum_intubated': True,
         
         'polyps':[
             {
@@ -372,7 +379,9 @@ def test_full_pipeline(db_session, test_user): #does raw JSON (from the LLM) end
     assert len(saved.polyps) == 1
     assert saved.polyps[0].size_mm == 5.0
 
-def test_transcript_creation_retrieval(db_session, client_db, auth_header, test_user):
+def test_transcript_creation_retrieval(db_session, client_db, auth_header, test_user): 
+    #this test passes without the cecum landmarks because the TranscriptModel does not have the same constraint
+    #as the ProcedureModel which is the finalized report.  This is intentional as the TranscriptModel is a work in progress
     raw = {
         'cecum_reached': True,
         'cecum_reached_time': datetime(2025,1,1,10,0),
@@ -429,6 +438,7 @@ def test_full_pipeline_with_api_endpoint(db_session, client_db, auth_header, tes
         'bbps_right' : 3,
         'bbps_transverse' : 3,
         'bbps_left' : 3,
+        'terminal_ileum_intubated': True,
         
         'polyps':[
             {
