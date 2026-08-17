@@ -2,8 +2,8 @@ import pytest
 
 from datetime import datetime, date
 
-from app.models.colonoscopy import ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal, ColonoscopyReportWithTime, ProcedureMetadata, ColonoscopyReportWithMetadata
-from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup
+from app.models.colonoscopy import ColonoscopyReport, ColonoscopyReportFinal, ColonoscopyReportWithMetadataFinal, ProcedureMetadataFinal, ColonoscopyReportWithTime, ProcedureMetadata, ColonoscopyReportWithMetadata
+from app.database.models import ProcedureModel, PolypModel, FindingModel, EndoscopistLookup, PolypLocationLookup, TranscriptModel, UserModel
 from app.services.functions import map_procedure, map_findings, map_polyp
 
 from app.services import functions
@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
 
 from tests.conftest import procedure_factory
-
+from unittest.mock import patch, AsyncMock
 
 
 
@@ -531,4 +531,44 @@ def test_finalize_returns_422_on_missing_landmarks(client_db, test_user, auth_he
 
     assert res.status_code == 422
 
-    
+
+@pytest.mark.asyncio
+@patch('app.services.functions.chat_client.responses.parse', new_callable=AsyncMock)
+async def test_endoscopist_id_survives_full_lifecycle(mock_parse, db_session, client_db, auth_header, test_user):
+     
+    expected_endoscopist_id = test_user.endoscopist_id
+
+    assert expected_endoscopist_id is not None
+
+
+    mock_report = ColonoscopyReport(
+        cecum_reached = True,
+        terminal_ileum_intubated = True,
+        
+        
+    )
+
+    mock_response = AsyncMock()
+    mock_response.output_parsed = mock_report
+    mock_parse.return_value = mock_response
+
+    #start a new transcript - this should pull the endoscopist_id from the user automatically
+    start_res = client_db.post("/transcripts/start", headers=auth_header, json={
+        "patient_name": "Bob the Builder",
+        "patient_dob": "1980-01-01",
+        "patient_nhi": "ABC1234"
+    },
+    )
+    assert start_res.status_code == 200
+    transcript_id = start_res.json()['transcript_id']
+
+    transcript = db_session.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
+    assert transcript.endoscopist_id == expected_endoscopist_id
+
+    transcript_res = client_db.post(f"/transcribe/{transcript_id}",
+                                     headers=auth_header,
+                                     files={"file": ("transcript.txt", b"cecum reached, terminal ileum intubated", "text/plain")},
+                                     data={"procedure_end_time": datetime(2025,1,1,10,6).isoformat(), "cecum_reached_time": datetime(2025,1,1,10,0).isoformat()},
+                                    )
+    assert transcript_res.status_code == 200
+    assert transcript_res.json()['report']['metadata']['endoscopist_id'] == expected_endoscopist_id
