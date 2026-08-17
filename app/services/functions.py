@@ -179,8 +179,14 @@ def add_time_stamps(llm: ColonoscopyReport, cecum_reached_time, procedure_end_ti
         bbps_right = llm.bbps_right,
         bbps_left = llm.bbps_left,
         bbps_transverse = llm.bbps_transverse,
+        terminal_ileum_intubated = llm.terminal_ileum_intubated,
+        appendiceal_orifice_identified = llm.appendiceal_orifice_identified,
+        tripartite_fold_identified = llm.tripartite_fold_identified,
+        ileocecal_valve_identified = llm.ileocecal_valve_identified,
+        other_landmarks_identified = llm.other_landmarks_identified,
         polyps = llm.polyps,
         findings = llm.findings,
+        
     )
 
 

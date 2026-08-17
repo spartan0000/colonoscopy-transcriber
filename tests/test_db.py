@@ -532,6 +532,11 @@ def test_finalize_returns_422_on_missing_landmarks(client_db, test_user, auth_he
     assert res.status_code == 422
 
 
+#this test follows the full lifecycle of a transcript from creation to finalization
+#and checks that the endoscopist_id is preserved throughtout the process
+#endoscopist_id is pulled from the user model when the transcript is created and should be preserved for the entire
+#cycle of the transcript.
+
 @pytest.mark.asyncio
 @patch('app.services.functions.chat_client.responses.parse', new_callable=AsyncMock)
 async def test_endoscopist_id_survives_full_lifecycle(mock_parse, db_session, client_db, auth_header, test_user):
@@ -565,10 +570,46 @@ async def test_endoscopist_id_survives_full_lifecycle(mock_parse, db_session, cl
     transcript = db_session.query(TranscriptModel).filter_by(transcript_id=transcript_id).first()
     assert transcript.endoscopist_id == expected_endoscopist_id
 
+    #now actually "transcribe" a procedure - this should also preserve the endoscopist_id
     transcript_res = client_db.post(f"/transcribe/{transcript_id}",
                                      headers=auth_header,
                                      files={"file": ("transcript.txt", b"cecum reached, terminal ileum intubated", "text/plain")},
                                      data={"procedure_end_time": datetime(2025,1,1,10,6).isoformat(), "cecum_reached_time": datetime(2025,1,1,10,0).isoformat()},
                                     )
+
+    assert mock_parse.called
+    
     assert transcript_res.status_code == 200
-    assert transcript_res.json()['report']['metadata']['endoscopist_id'] == expected_endoscopist_id
+    #check that the endoscopist_id is preserved in the report returned by the transcribe endpoint
+    assert transcript_res.json()['report']['metadata']['endoscopist_id'] == expected_endoscopist_id 
+
+    db_session.refresh(transcript)
+
+    #check that the endoscopist_id is preserved in the transcript model in the database
+    assert transcript.endoscopist_id == expected_endoscopist_id 
+
+    #add things the user would add to the report before finalizing it
+    full_report = transcript_res.json()['report']
+    full_report['report']['bbps_right'] = 3
+    full_report['report']['bbps_transverse'] = 3
+    full_report['report']['bbps_left'] = 3
+
+    
+
+
+    #test the finalizing endpoint /write which should also preserve the endoscopist_id
+    #writes to the database
+
+    print(f"Full Report: {full_report}")
+    
+    final_res = client_db.post(f"/transcripts/{transcript_id}/write", headers=auth_header, json=full_report)
+
+
+    print(f"Final response: {final_res.json()}")
+    assert final_res.status_code == 200
+
+    procedure_id = final_res.json()['procedure_id']
+
+    procedure = db_session.query(ProcedureModel).filter_by(procedure_id=procedure_id).first()
+    #check that the endoscopist_id is preserved in the finalized procedure model in the database
+    assert procedure.endoscopist_id == expected_endoscopist_id

@@ -142,7 +142,7 @@ class ProcedureMetadataFinal(BaseModel):
     patient_NHI: str = Field(..., description = "NHI number of patient")
     patient_dob: date
     procedure_date: date 
-    indication: str = Field(default = None, description="text input for the indication for the procedure") #this could eventually be a very long list or enum of indications
+    indication: Optional[str] = Field(default = None, description="text input for the indication for the procedure") #this could eventually be a very long list or enum of indications
     endoscopist_id: int = Field(..., description = "endoscopist_id performing the procedure")
 
 class ColonoscopyReportWithMetadata(BaseModel):
