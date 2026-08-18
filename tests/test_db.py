@@ -8,6 +8,8 @@ from app.services.functions import map_procedure, map_findings, map_polyp
 
 from app.services import functions
 
+from app.api.write_db_generate_pdf_route import CONSTRAINT_ERROR_MESSAGES
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
 
@@ -613,3 +615,55 @@ async def test_endoscopist_id_survives_full_lifecycle(mock_parse, db_session, cl
     procedure = db_session.query(ProcedureModel).filter_by(procedure_id=procedure_id).first()
     #check that the endoscopist_id is preserved in the finalized procedure model in the database
     assert procedure.endoscopist_id == expected_endoscopist_id
+
+#series of tests to test the constraints in the ProcedureModel table which is written to using the transcripts/transcript_id/write endpoint
+def test_write_endpoint_check_constraint_cecum_reached(client_db, auth_header, test_user, transcript_factory, build_valid_report_payload):
+    transcript = transcript_factory(user_id = test_user.id)
+
+    payload = build_valid_report_payload(
+        transcript.transcript_id,
+
+    )
+
+    res = client_db.post(f"transcripts/{transcript.transcript_id}/write", headers=auth_header, json = payload)
+
+    assert res.status_code == 422
+    assert res.json()['detail'] == CONSTRAINT_ERROR_MESSAGES['check_cecum_reached_criteria']
+
+def test_write_endpoint_rejects_time_order_violation(client_db, auth_header, test_user, transcript_factory, build_valid_report_payload):
+    transcript = transcript_factory(user_id = test_user.id)
+
+    payload = build_valid_report_payload(
+        transcript.transcript_id,
+        cecum_reached_time = datetime(2025,1,1,10,6), #this time is after the procedure end time which violates the constraint
+        procedure_end_time = datetime(2025,1,1,10,0),
+
+    )
+
+    res = client_db.post(f"/transcripts/{transcript.transcript_id}/write", headers=auth_header, json=payload)
+    assert res.status_code == 422
+
+    print(res.json()['detail'])
+
+    assert res.json()['detail'] == CONSTRAINT_ERROR_MESSAGES['check_time_order']
+
+def test_write_endpoint_rejects_duplicate_patient_procedure_date(client_db, auth_header, test_user, transcript_factory, procedure_factory, build_valid_report_payload):
+    procedure_factory(user_id = test_user.id, patient_id = 'ABC1234', procedure_date = datetime(2025,1,1)) #the factory defaults are NHI ABC1234 and procedure date 2025-1-1
+
+    transcript = transcript_factory(user_id = test_user.id)
+
+    payload = build_valid_report_payload(
+        transcript.transcript_id,
+        metadata_overrides = {
+            'patient_nhi' : 'ABC1234',
+            'procedure_date' : datetime(2025,1,1)
+        }
+    )
+
+    res = client_db.post(f"/transcripts/{transcript.transcript_id}/write", headers=auth_header, json = payload)
+
+    assert res.status_code == 422
+    assert res.json()['detail'] == CONSTRAINT_ERROR_MESSAGES['uq_patient_procedure_date']
+
+
+

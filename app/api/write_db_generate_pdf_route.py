@@ -22,6 +22,27 @@ from app.config import OUTPUT_DIR, API_BASE
 
 router = APIRouter(tags=['write_db_pdf'])
 
+#small lookup table for the various errors we need to handle
+
+CONSTRAINT_ERROR_MESSAGES = {
+    "check_cecum_reached_criteria": "Cannot finalize: Please ensure at least one cecal landmark/criteria is selected.",
+    "check_cecum_consistency": "Cannot finalize: Cecum reached time must be provided when cecum is reached, and omitted when it is not.",
+    "check_bbps_right": "Cannot finalize: BBPS right score must be between 0 and 3.",
+    "check_bbps_transverse": "Cannot finalize: BBPS transverse score must be between 0 and 3.",
+    "check_bbps_left": "Cannot finalize: BBPS left score must be between 0 and 3.",
+    "check_time_order": "Cannot finalize: Procedure end time must be after cecum reached time.",
+    "uq_patient_procedure_date": "Cannot finalize: A procedure for this patient on this date already exists.",
+}
+
+#small helper function to pick the correct integrity error
+
+def raise_friendly_integrity_error(e: IntegrityError):
+    error_text = str(e.orig)
+    for constraint_name, message in CONSTRAINT_ERROR_MESSAGES.items():
+        if constraint_name in error_text:
+            raise HTTPException(status_code=422, detail=message)
+    raise HTTPException(status_code=500, detail="Failed to write to database due to integrity error.")
+
 #this is the final endpoint where the user has verified the data is correct and submits it
 #writes to Procedure table which is where the finalized transcript data goes
 
@@ -59,18 +80,8 @@ def write_db_pdf(transcript_id: uuid.UUID,
     except IntegrityError as e:
         db.rollback()
         
-        if 'check_cecum_reached_criteria' in str(e.orig):
-            raise HTTPException(
-                status_code=422,
-                detail="Cannot finalize: Please ensure at least one cecal landmark/criteria is selected"
-            )
-        logger.error("DB write failed due to integrity error", exc_info=True)
-        print(f"DB write failed due to integrity error: {e}")
-
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to write to database due to integrity error"
-        )
+        raise_friendly_integrity_error(e)
+        
     except Exception as e:
         print("DB WRITE FAILED", e)
         logger.error("DB write failed", exc_info=True)
