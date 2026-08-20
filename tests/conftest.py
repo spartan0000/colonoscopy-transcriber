@@ -344,3 +344,27 @@ def build_valid_report_payload():
         full_report = ColonoscopyReportWithMetadataFinal(metadata=metadata, report=report)
         return json.loads(full_report.model_dump_json())
     return _build
+
+@pytest.fixture(scope="function")
+def image_factory(db_session):
+    def _make_image(transcript_id, **kwargs):
+        defaults = dict(
+            image_path="path/to/test_image.png",
+            captured_at=datetime(2025,1,1,10,0),
+            anatomic_location = None,
+            label_source = None,
+
+        )
+
+        defaults.update(kwargs)
+        image = Images(transcript_id = transcript_id, **defaults)
+
+        db_session.add(image)
+        db_session.commit()
+        db_session.refresh(image)
+
+        return image
+    return _make_image
+
+
+

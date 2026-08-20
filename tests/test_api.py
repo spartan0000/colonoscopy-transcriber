@@ -6,6 +6,8 @@ import jwt
 
 from datetime import date, datetime
 
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 from app.main import app
 
@@ -742,3 +744,37 @@ def test_transcript_lifecycle_end_to_end(client_db, auth_header, make_token, tes
 
     assert draft['patient_name'] == 'santa claus'
 
+### testing new auth requirement on the get images endpoint
+def test_get_images_requires_auth(client_db, transcript_factory, image_factory):
+    transcript = transcript_factory()
+    image = image_factory(transcript_id = transcript.transcript_id)
+
+    res = client_db.get(f"/images/{image.image_id}") #no auth header
+
+    assert res.status_code == 401
+
+def test_get_images_with_wrong_user(client_db, transcript_factory, image_factory, make_token, db_session):
+    transcript = transcript_factory() # this is owned by some other user - the test_user fixture
+
+    image = image_factory(transcript_id = transcript.transcript_id)
+
+    #original version of this test only created a different user token - get_current_user rejected that with a 401 so
+    #have to create a real other user to test the actual authorized user check in the get_image endpoint
+
+    other_user = UserModel(
+        username = "other_user",
+        email = "other@email.com",
+        hashed_password = pwd_hasher.hash("password"),
+        endoscopist_id = 2 
+    )
+
+    db_session.add(other_user)
+    db_session.commit()
+    db_session.refresh(other_user)
+
+    other_user_token = make_token(other_user.id)
+    with patch("app.api.get_images_route.os.path.exists", return_value=True):
+
+        res = client_db.get(f"/images/{image.image_id}", headers = {"Authorization": f"Bearer {other_user_token}"})
+
+    assert res.status_code == 403
