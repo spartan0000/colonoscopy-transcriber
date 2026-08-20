@@ -773,7 +773,8 @@ def test_get_images_with_wrong_user(client_db, transcript_factory, image_factory
     db_session.refresh(other_user)
 
     other_user_token = make_token(other_user.id)
-    with patch("app.api.get_images_route.os.path.exists", return_value=True):
+    with patch("app.api.get_images_route.os.path.exists", return_value=True): #tests were failing as this actual path doesn't exist
+        #decided to patch this rather than create a real temp test file
 
         res = client_db.get(f"/images/{image.image_id}", headers = {"Authorization": f"Bearer {other_user_token}"})
 
