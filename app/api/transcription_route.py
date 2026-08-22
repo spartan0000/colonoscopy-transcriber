@@ -33,6 +33,9 @@ def start_procedure(start : StartProcedureRequest,
                     current_user: UserModel = Depends(get_current_user), 
                     db: Session = Depends(get_db), 
                     ):
+    if current_user.endoscopist_id is None: #check for endoscopist id - eventually some users may not be endoscopists
+        raise HTTPException(status_code=422, detail="This account is not linked to an endoscopist")
+    
     new_transcript = TranscriptModel(
         user_id = current_user.id,
         patient_name = start.patient_name,
