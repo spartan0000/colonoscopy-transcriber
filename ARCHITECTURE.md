@@ -117,6 +117,10 @@ Every procedure/transcript row carries a `user_id`. Each route independently loa
 ### Friendly constraint-error mapping at the write endpoint
 Rather than let every database `CHECK`/`UNIQUE` violation surface as an opaque `500`, `write_db_generate_pdf_route.py` maps known constraint names to clinician-readable `422` messages via a small dict (`CONSTRAINT_ERROR_MESSAGES`). New constraints need a matching entry added here or they'll fall back to the generic 500.
 
+### Endoscopist_id validity enforced by validating current user.  
+Endoscopist lookup table currently has a relationship with the final ProcedureModel table only and not the TranscriptModel table.  This allows for the TranscriptModel to have more flexibility overall but also still enforces the validity of an endoscopist_id because the endoscopist_id is pulled directly from the current user and also gets checked that the current user's endoscopist_id exists.  Therefore, even though there is no database level FK relationship to enforce the validity of an endoscopist_id, the pathways that allow for writing an endoscopist_id (/transcripts/start, from current_user.endoscopist_id) cannot produce an invalid value.
+**Caveat** this guarantee depends entirely on endoscopist_id always being derived from an already-validated current_user. Any future code path that writes TranscriptModel.endoscopist_id directly — a bulk import, an admin correction tool, a data migration — would need its own validation, since the database itself won't catch a bad value here.
+
 ## TODO
 
 - **No way to set `UserModel.endoscopist_id` via the API.** `/register` doesn't accept it, and there's no profile/update endpoint. Every new user is created with `endoscopist_id = NULL`, which then propagates to `TranscriptModel.endoscopist_id` at `/transcripts/start` and will fail the `NOT NULL` FK on `ProcedureModel.endoscopist_id` at `/write` time (a plain `NOT NULL` violation isn't in `CONSTRAINT_ERROR_MESSAGES`, so it'd surface as the generic 500, not a helpful message). Needs either a field on `/register`, an admin/setup endpoint, or a self-service "claim your endoscopist profile" flow.

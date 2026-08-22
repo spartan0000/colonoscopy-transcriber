@@ -84,7 +84,7 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
     
     hashed_password = pwd_hasher.hash(request.password)
 
-    endoscopist = EndoscopistLookup(endoscopist_id = request.endoscopist_name, is_active=True)
+    endoscopist = EndoscopistLookup(endoscopist_name = request.endoscopist_name, is_active=True)
     db.add(endoscopist)
     db.flush()
 
