@@ -16,7 +16,7 @@ import jwt
 
 
 from app.database.connection import get_db
-from app.database.models import UserModel
+from app.database.models import UserModel, EndoscopistLookup
 
 
 load_dotenv()
@@ -58,6 +58,7 @@ class RegisterRequest(BaseModel):
     username: str
     email: EmailStr
     password: str
+    endoscopist_name: str
 
 class LoginRequest(BaseModel):
     username_or_email: str
@@ -78,12 +79,20 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
             raise HTTPException(status_code=409, detail="Username already in use")
         if existing.email:
             raise HTTPException(status_code=409, detail="Email already in use")
+
+
     
     hashed_password = pwd_hasher.hash(request.password)
+
+    endoscopist = EndoscopistLookup(endoscopist_id = request.endoscopist_name, is_active=True)
+    db.add(endoscopist)
+    db.flush()
+
     new_user = UserModel(
         username = request.username,
         email = request.email,
-        hashed_password = hashed_password
+        hashed_password = hashed_password,
+        endoscopist_id = endoscopist.endoscopist_id,
     )
     db.add(new_user)
     db.commit()
